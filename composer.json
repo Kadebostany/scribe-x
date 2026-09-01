@@ -47,5 +47,10 @@
         "fof/rich-text": "*"
     },
     "minimum-stability": "beta",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "support": {
+        "issues": "https://github.com/ernestdefoe/scribe/issues",
+        "source": "https://github.com/ernestdefoe/scribe",
+        "forum": "https://ernestdefoe.online/t/scribe"
+    }
 }
