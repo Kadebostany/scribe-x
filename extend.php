@@ -1,0 +1,24 @@
+<?php
+
+/*
+ * Scribe — a true WYSIWYG editor for Flarum.
+ *
+ * Deliberately does NOT depend on flarum/markdown. See src/Formatter/Vocabulary.
+ */
+
+use Flarum\Extend;
+use ErnestDefoe\Scribe\Formatter\Configure;
+
+return [
+    (new Extend\Frontend('forum'))
+        ->js(__DIR__.'/js/dist/forum.js')
+        ->css(__DIR__.'/less/forum.less'),
+
+    (new Extend\Frontend('admin'))
+        ->js(__DIR__.'/js/dist/admin.js'),
+
+    (new Extend\Formatter)
+        ->configure(Configure::class),
+
+    new Extend\Locales(__DIR__.'/locale'),
+];

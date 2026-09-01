@@ -1,0 +1,16 @@
+/*
+ * 🚨 Never redefine a core CSS variable at :root. Everything here is a --scribe-*
+ * name resolved against core variables with real fallbacks.
+ */
+.Scribe-tableWrap {
+  /* A wide table scrolls inside its own box; the post must never scroll the page. */
+  overflow-x: auto;
+  max-width: 100%;
+
+  table { border-collapse: collapse; }
+  th, td {
+    border: 1px solid var(--control-bg, #ddd);
+    padding: 6px 10px;
+  }
+  th { font-weight: 600; background: var(--control-bg, #f5f5f5); }
+}

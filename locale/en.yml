@@ -1,0 +1,18 @@
+ernestdefoe-scribe:
+  forum:
+    composer:
+      bold: Bold
+      italic: Italic
+      underline: Underline
+      strike: Strikethrough
+      code: Inline code
+      heading: Heading
+      bullet_list: Bulleted list
+      ordered_list: Numbered list
+      quote: Quote
+      code_block: Code block
+      link: Link
+      image: Image
+      table: Table
+      text_color: Text colour
+      horizontal_rule: Divider
