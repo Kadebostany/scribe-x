@@ -98,9 +98,23 @@
    * normal-height composer the text area overflowed and sat on top of the
    * "Post Discussion" button. `flex: 1` + `min-height: 0` lets it take the
    * space it is given and scroll inside it.
+   *
+   * 🚨 And this element must claim its own share as a flex ITEM, not only act
+   * as a flex container.
+   *
+   * It declared `display: flex` for its child and then said nothing about its
+   * own behaviour, so it defaulted to `flex: 0 1 auto` — height from content.
+   * Its only child is `flex: 1; min-height: 0`, which contributes ZERO to
+   * min-content. Content height of nearly nothing, so the whole editor
+   * collapsed to a sliver. Desktop never showed it because Flarum hands this
+   * element a definite height there; the full-screen mobile composer does not,
+   * and a user reported an editing box "so narrow it's almost as if it doesn't
+   * exist" while his text was still in it.
    */
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
 
   .ProseMirror {
     flex: 1;
@@ -199,5 +213,22 @@
   th {
     font-weight: 600;
     background: color-mix(in srgb, var(--text-color, #222) 6%, transparent);
+  }
+}
+
+
+/*
+ * 🚨 A floor on the full-screen mobile composer.
+ *
+ * Belt and braces for the collapse above: if anything ever hands this element
+ * a parent that is not a flex container, `flex: 1` does nothing and there is
+ * no height to inherit. On mobile the composer is full-screen, so a floor
+ * cannot overflow anything — which is not true on desktop, where a short
+ * composer plus a fixed minimum is exactly what once pushed the editable over
+ * the "Post Discussion" button. Hence mobile only.
+ */
+@media (max-width: 767px) {
+  .Scribe-editor {
+    min-height: 40vh;
   }
 }
