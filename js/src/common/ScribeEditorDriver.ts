@@ -48,6 +48,45 @@ export default class ScribeEditorDriver implements EditorDriverInterface {
     this.el.classList.add('Scribe-editor', ...params.classNames);
     dom.append(this.el);
 
+    /*
+     * 🚨 Make the element answer to `.value`, like the textarea it replaces.
+     *
+     * Core's own driver puts a <textarea> on `driver.el`, so `composer.editor.el.value`
+     * became a de-facto contract long before this extension existed. Extensions
+     * read it directly — MagicRead's character counter does exactly
+     * `ctx.attrs.composer.editor.el` and then `ta.value.length`, casting to
+     * HTMLTextAreaElement without checking. Against a <div> that is `undefined`,
+     * so `.length` throws on EVERY keystroke: a user reported thousands of
+     * console errors and a composer that had to be seen to be believed.
+     *
+     * We cannot fix every extension that assumes this, and we are the ones who
+     * changed the element out from under them, so the element answers to `.value`
+     * instead. Defined on the instance rather than the prototype because the
+     * element is a plain div shared with everything else on the page.
+     *
+     * 🚨 The value is the PLAIN TEXT, not getHTML().
+     *
+     * Every realistic consumer of this is counting or validating what the
+     * person wrote: a character counter, a minimum-length check. Handing them
+     * markup makes a counter read 7 on an empty composer (`<p></p>`) and 12
+     * for "hello", and it makes a ten-character minimum pass on a one-character
+     * post. Plain text is what those callers mean by "the value", and it is
+     * what a Markdown textarea would have given them for unformatted prose.
+     *
+     * Scribe never reads this itself — the real content goes through
+     * getHTML() in oninput — so nothing internal depends on it round-tripping
+     * formatting.
+     */
+    Object.defineProperty(this.el, 'value', {
+      configurable: true,
+      get: () => (this.editor ? this.editor.getText() : this.params.value || ''),
+      set: (next: unknown) => {
+        const text = next == null ? '' : String(next);
+        if (this.editor) this.editor.commands.setContent(text);
+        else this.params.value = text;
+      },
+    });
+
     this.renderToolbar();
     this.ready = this.boot();
   }
@@ -75,9 +114,40 @@ export default class ScribeEditorDriver implements EditorDriverInterface {
         // calling it from the input listeners as well makes every keypress
         // cost O(document).
         this.params.oninput(this.editor!.getHTML());
+
+        /*
+         * 🚨 Fire a native `input` event, because a textarea would have.
+         *
+         * The element this replaces is a <textarea>, so extensions bind
+         * `editor.el.addEventListener('input', …)` and expect to hear about
+         * every keystroke — MagicRead's character counter does exactly that.
+         * ProseMirror owns this DOM and does not reliably emit `input` for
+         * content it applies itself, so a counter bound here would mount, read
+         * once, and then never move again. Emitting it ourselves keeps that
+         * side of the contract too.
+         */
+        this.el.dispatchEvent(new Event('input', { bubbles: true }));
       },
       onTransaction: () => {
-        this.params.inputListeners.forEach((l: Function) => l());
+        /*
+         * 🚨 One bad listener must not take the editor down with it.
+         *
+         * These callbacks belong to other extensions, and they run on every
+         * transaction. Calling them bare meant a single throwing listener
+         * aborted the loop, skipped syncToolbar() so the toolbar froze, and
+         * propagated out through ProseMirror's transaction handling — turning
+         * one extension's wrong assumption into an editor that appeared
+         * completely broken. Isolate each one; a listener that throws is that
+         * extension's bug, reported once and then stepped over.
+         */
+        this.params.inputListeners.forEach((l: Function) => {
+          try {
+            l();
+          } catch (e) {
+            console.error('[Scribe] an input listener from another extension threw:', e);
+          }
+        });
+
         this.syncToolbar();
       },
       editorProps: {
