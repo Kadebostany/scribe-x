@@ -10,10 +10,14 @@ ernestdefoe-scribe:
       underline: Underline
       strike: Strikethrough
       code: Inline code
+      superscript: Superscript
+      subscript: Subscript
       text_color: Text colour
       highlight: Highlight
+      heading1: Title
       heading: Heading
       subheading: Subheading
+      heading4: Minor heading
       bullet_list: Bulleted list
       ordered_list: Numbered list
       quote: Quote

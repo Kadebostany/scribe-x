@@ -5,7 +5,6 @@
   "description": "Scribe — a true WYSIWYG editor for Flarum 2",
   "dependencies": {
     "@tiptap/core": "^3.0.0",
-    "@tiptap/pm": "^3.0.0",
     "@tiptap/extension-blockquote": "^3.0.0",
     "@tiptap/extension-bold": "^3.0.0",
     "@tiptap/extension-bullet-list": "^3.0.0",
@@ -27,10 +26,13 @@
     "@tiptap/extension-paragraph": "^3.0.0",
     "@tiptap/extension-placeholder": "^3.0.0",
     "@tiptap/extension-strike": "^3.0.0",
+    "@tiptap/extension-subscript": "^3.31.0",
+    "@tiptap/extension-superscript": "^3.31.0",
     "@tiptap/extension-table": "^3.0.0",
     "@tiptap/extension-text": "^3.0.0",
     "@tiptap/extension-text-style": "^3.0.0",
-    "@tiptap/extension-underline": "^3.0.0"
+    "@tiptap/extension-underline": "^3.0.0",
+    "@tiptap/pm": "^3.0.0"
   },
   "devDependencies": {
     "flarum-tsconfig": "^2.0.0",
@@ -46,5 +48,10 @@
     "format": "prettier --write src",
     "check-typings": "tsc --noEmit --project tsconfig.json"
   },
-  "prettier": { "singleQuote": true, "trailingComma": "es5", "printWidth": 100, "tabWidth": 2 }
+  "prettier": {
+    "singleQuote": true,
+    "trailingComma": "es5",
+    "printWidth": 100,
+    "tabWidth": 2
+  }
 }

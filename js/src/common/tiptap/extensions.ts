@@ -21,6 +21,8 @@ import History from '@tiptap/extension-history';
 import Dropcursor from '@tiptap/extension-dropcursor';
 import Gapcursor from '@tiptap/extension-gapcursor';
 import Placeholder from '@tiptap/extension-placeholder';
+import Superscript from '@tiptap/extension-superscript';
+import Subscript from '@tiptap/extension-subscript';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table';
 import { Extension, Mark, Node, mergeAttributes } from '@tiptap/core';
@@ -291,11 +293,14 @@ export function buildExtensions(placeholder: string) {
     Italic,
     Strike,
     Underline,
+    Superscript,
+    Subscript,
     Code,
     CodeBlock,
-    // Only the levels the server has templates for and a forum post actually
-    // needs — h1 in a reply is shouting, and h4-h6 are indistinguishable.
-    Heading.configure({ levels: [2, 3] }),
+    // The server has templates for all six (Vocabulary::TEMPLATES); only
+    // 1-4 are exposed in the toolbar — 5/6 are visually indistinguishable
+    // from body text and from each other at typical post-body font sizes.
+    Heading.configure({ levels: [1, 2, 3, 4] }),
     BulletList,
     /*
      * 🚨 `data-type` is not decoration. Both <ul> and <ol> alias to the single
