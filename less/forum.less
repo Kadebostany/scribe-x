@@ -74,6 +74,11 @@
   min-width: 0;
 }
 
+.Scribe-promptEmoji {
+  flex: 0 0 44px;
+  text-align: center;
+}
+
 .Scribe-swatch {
   width: 24px;
   height: 24px;
@@ -159,6 +164,65 @@
 
     img { max-width: 100%; height: auto; }
 
+    /* Mirrors Vocabulary::TEMPLATES' P/H1-H6 `@align` → `text-align` — the
+       editor has no server-rendered style to inherit, so it needs its own copy. */
+    [data-align="left"]    { text-align: left; }
+    [data-align="center"]  { text-align: center; }
+    [data-align="right"]   { text-align: right; }
+    [data-align="justify"] { text-align: justify; }
+
+    /* The server adds the real <summary>/title bar at render time (see
+       Vocabulary::EXTRA_TEMPLATES['SPOILER']) — the editor only needs to show
+       *something* is there, via the title text and a muted body. */
+    .Scribe-spoiler {
+      border: 1px solid var(--scribe-line, rgba(0, 0, 0, 0.15));
+      border-radius: 6px;
+      padding: 8px 10px;
+      background: color-mix(in srgb, var(--text-color, #222) 4%, transparent);
+
+      &::before {
+        content: attr(data-title);
+        display: block;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: var(--scribe-muted, #777);
+      }
+
+      &:not([data-title])::before { content: '(untitled spoiler)'; }
+    }
+
+    .Scribe-info {
+      border-radius: 6px;
+      padding: 10px 12px;
+      border: 1px solid var(--scribe-line, rgba(0, 0, 0, 0.15));
+
+      &::before {
+        content: attr(data-title);
+        display: block;
+        font-weight: 700;
+      }
+
+      &:not([data-title])::before { display: none; }
+    }
+
+    /* Composing always sees the real content — ReplyGate::class lets the
+       author see their own post unconditionally. This border is just a
+       reminder that the block is gated for everyone else. */
+    .Scribe-replyGate {
+      border: 1px dashed var(--scribe-line, rgba(0, 0, 0, 0.25));
+      border-radius: 6px;
+      padding: 8px 10px;
+
+      &::before {
+        content: '🔒 only visible to members who have replied';
+        display: block;
+        font-size: 0.85em;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: var(--scribe-muted, #777);
+      }
+    }
+
     hr {
       border: 0;
       border-top: 1px solid var(--scribe-line, rgba(0, 0, 0, 0.15));
@@ -198,22 +262,113 @@
   }
 }
 
-/* Rendered posts: the table wrapper the server emits. */
+/*
+ * Rendered posts: the table wrapper the server emits. "Chip grid" look —
+ * every cell is its own rounded box with a small gap to its neighbours
+ * (`border-spacing`, not `border-collapse`), matching magicbb's old table
+ * style now that its CSS is gone along with the extension. No zebra
+ * striping: every body cell is the same flat colour.
+ */
 .Scribe-tableWrap {
   overflow-x: auto;
+  overflow-y: hidden;
   max-width: 100%;
+  margin: 0.65em 0;
 
-  table { border-collapse: collapse; }
+  table {
+    border-collapse: separate;
+    border-spacing: 3px;
+    width: 100%;
+  }
 
   th, td {
-    border: 1px solid color-mix(in srgb, var(--text-color, #222) 14%, transparent);
-    padding: 6px 10px;
+    padding: 10px 16px;
+    text-align: left;
+    border-radius: 6px;
   }
 
-  th {
-    font-weight: 600;
-    background: color-mix(in srgb, var(--text-color, #222) 6%, transparent);
+  /*
+   * 🚨 Scoped to `thead th`, not `th`. Old Markdown/BBCode-era tables (pre-
+   * Scribe) put a <TH> in every row's first cell as a row label, with no
+   * <thead> at all — a blanket `th { blue }` rule turned that whole column
+   * into one solid block. `thead th` only ever matches a real top header
+   * row, so a row-label table keeps its td styling for those cells (below).
+   */
+  thead th {
+    font-weight: 700;
+    color: #fff;
+    background: var(--primary-color, #3b82f6);
+    text-align: center;
+    white-space: nowrap;
+    // Redundant with the `th, td` rule above, but explicit — a cell that's
+    // its own separated box (border-spacing, not border-collapse) has no
+    // shared edge with its neighbours, so every corner rounds the same way.
+    border-radius: 6px;
   }
+
+  /* A <th> outside <thead> is a row label, not a column header — bold, not
+     a colour block, so it reads as part of the row instead of a banner. */
+  tbody th {
+    font-weight: 600;
+    white-space: nowrap;
+    background: #e4eaf7;
+  }
+
+  td {
+    background: #e4eaf7;
+  }
+}
+
+/* Rendered posts: spoiler + info blocks. Colour comes from the server's
+   inline style (Vocabulary::EXTRA_TEMPLATES['SPOILER']/['INFO']) — layout
+   lives here so a block with no colour set still looks intentional. */
+.Scribe-spoiler {
+  border: 1px solid var(--scribe-line, rgba(0, 0, 0, 0.15));
+  border-radius: 6px;
+  padding: 4px 10px;
+  margin: 0.65em 0;
+
+  summary {
+    cursor: pointer;
+    font-weight: 600;
+    padding: 6px 0;
+  }
+
+  .Scribe-spoilerBody { padding: 4px 0 8px; }
+}
+
+.Scribe-info {
+  border: 1px solid var(--scribe-line, rgba(0, 0, 0, 0.15));
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 0.65em 0;
+
+  .Scribe-infoTitle { font-weight: 700; margin-bottom: 4px; }
+}
+
+/*
+ * Both the locked message and the real body are always in the HTML (see
+ * Vocabulary::EXTRA_TEMPLATES['SCRIBEREPLY']) — js/src/forum/replyGate.ts
+ * adds `.is-unlocked` client-side once it knows the viewer qualifies, and
+ * that's the only thing that decides which half is visible. Locked is the
+ * default so there's no flash of real content before JS has a chance to run.
+ */
+.Scribe-replyGateBody { display: none; }
+
+.Scribe-replyGateLocked {
+  border: 1px dashed var(--scribe-line, rgba(0, 0, 0, 0.25));
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 0.65em 0;
+  color: var(--muted-color, #777);
+  font-style: italic;
+
+  &::before { content: '🔒 '; font-style: normal; }
+}
+
+.Scribe-replyGate.is-unlocked {
+  .Scribe-replyGateBody { display: block; }
+  .Scribe-replyGateLocked { display: none; }
 }
 
 

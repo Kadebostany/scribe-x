@@ -17,6 +17,13 @@ ernestdefoe-scribe:
       bullet_list: Bulleted list
       ordered_list: Numbered list
       quote: Quote
+      align_left: Align left
+      align_center: Align center
+      align_right: Align right
+      align_justify: Justify
+      spoiler: Spoiler
+      info_box: Info box
+      reply_gate: Reply to view
       code_block: Code block
       link: Link
       image: Image
@@ -31,8 +38,11 @@ ernestdefoe-scribe:
       apply: Apply
       remove_link: Remove link
       clear_colour: Clear
+      clear_highlight: Clear
       link_placeholder: Paste or type a link…
       image_placeholder: Image address…
+      spoiler_title_placeholder: Spoiler title…
+      info_title_placeholder: Title…
 
   admin:
     toolbar_label: Composer toolbar

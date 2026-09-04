@@ -23,7 +23,7 @@ import Gapcursor from '@tiptap/extension-gapcursor';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table';
-import { Mark, mergeAttributes } from '@tiptap/core';
+import { Extension, Mark, Node, mergeAttributes } from '@tiptap/core';
 
 /**
  * A colour is stored in `data-color` and filtered server-side by s9e's #color.
@@ -41,8 +41,14 @@ export const ScribeColor = Mark.create({
       color: {
         default: null,
         parseHTML: (el: HTMLElement) => el.getAttribute('data-color'),
+        /*
+         * `style` here is a live-editor convenience only — the server never
+         * trusts it. It reads `data-color` through #color and drops any raw
+         * `style` attribute it doesn't alias, same as Highlight's own
+         * multicolor output already does.
+         */
         renderHTML: (attrs: Record<string, any>) =>
-          attrs.color ? { 'data-color': attrs.color } : {},
+          attrs.color ? { 'data-color': attrs.color, style: `color: ${attrs.color}` } : {},
       },
     };
   },
@@ -51,6 +57,172 @@ export const ScribeColor = Mark.create({
   },
   renderHTML({ HTMLAttributes }) {
     return ['span', mergeAttributes(HTMLAttributes), 0];
+  },
+});
+
+/**
+ * Renders in the editor as a bare `<details open data-title>` — no
+ * <summary>, no body wrapper. Vocabulary::EXTRA_TEMPLATES['SCRIBESPOILER']
+ * builds the real <summary> (from `@label`) and the `.Scribe-spoilerBody`
+ * wrapper at render time, so the server owns what a spoiler looks like, not
+ * the client. `open` is hardcoded so the body stays visible and editable;
+ * the server's <details> has no `open` attribute, so a real spoiler stays
+ * collapsed for readers as intended.
+ *
+ * 🚨 A <details> with no <summary> child gets the browser's own default
+ * disclosure marker in the editor — cosmetic only (CSS can't reliably target
+ * that phantom marker cross-browser without a real <summary> element, and an
+ * empty one round-trips through the formatter as escaped literal text, since
+ * s9e's HTMLElements plugin doesn't silently drop unrecognised tags — see
+ * the very bug this fork was built to fix). Not worth it for a look-and-feel
+ * detail; the title bar's own `::before` (forum.less) is what actually
+ * communicates "this is a spoiler" in the editor.
+ *
+ * 🚨 parseHTML reads `.Scribe-spoilerBody` for content, not the element's
+ * direct children — re-opening an existing post for editing loads the
+ * SERVER-rendered HTML (summary + body div included), and without this the
+ * summary's title text would get parsed in as a stray duplicate paragraph.
+ */
+export const ScribeSpoiler = Node.create({
+  name: 'scribeSpoiler',
+  group: 'block',
+  content: 'block+',
+  defining: true,
+  addAttributes() {
+    return {
+      label: {
+        default: '',
+        parseHTML: (el: HTMLElement) => el.getAttribute('data-title') ?? '',
+        renderHTML: (attrs: Record<string, any>) =>
+          attrs.label ? { 'data-title': attrs.label } : {},
+      },
+    };
+  },
+  parseHTML() {
+    return [
+      {
+        tag: 'details.Scribe-spoiler',
+        contentElement: (el: HTMLElement) =>
+          (el.querySelector(':scope > .Scribe-spoilerBody') as HTMLElement) ?? el,
+      },
+    ];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['details', mergeAttributes(HTMLAttributes, { class: 'Scribe-spoiler', open: 'true' }), 0];
+  },
+});
+
+/**
+ * Same shape as ScribeSpoiler: the editor emits a bare `<aside data-title
+ * data-font data-bg data-border>`, and Vocabulary::EXTRA_TEMPLATES['INFO']
+ * builds the visible title bar and `.Scribe-infoBody` wrapper at render
+ * time. font/bg/border go through #color server-side exactly like
+ * ScribeColor's `color` — same reasoning, see that mark above.
+ */
+export const ScribeInfo = Node.create({
+  name: 'scribeInfo',
+  group: 'block',
+  content: 'block+',
+  defining: true,
+  addAttributes() {
+    const colorAttr = (key: string, source: string) => ({
+      default: null,
+      parseHTML: (el: HTMLElement) => el.getAttribute(source),
+      renderHTML: (attrs: Record<string, any>) => (attrs[key] ? { [source]: attrs[key] } : {}),
+    });
+
+    return {
+      label: {
+        default: '',
+        parseHTML: (el: HTMLElement) => el.getAttribute('data-title') ?? '',
+        renderHTML: (attrs: Record<string, any>) =>
+          attrs.label ? { 'data-title': attrs.label } : {},
+      },
+      font: colorAttr('font', 'data-font'),
+      bg: colorAttr('bg', 'data-bg'),
+      border: colorAttr('border', 'data-border'),
+    };
+  },
+  parseHTML() {
+    return [
+      {
+        tag: 'aside.Scribe-info',
+        contentElement: (el: HTMLElement) =>
+          (el.querySelector(':scope > .Scribe-infoBody') as HTMLElement) ?? el,
+      },
+    ];
+  },
+  renderHTML({ HTMLAttributes }) {
+    const style = [
+      HTMLAttributes['data-bg'] && `background:${HTMLAttributes['data-bg']}`,
+      HTMLAttributes['data-border'] && `border-color:${HTMLAttributes['data-border']}`,
+      HTMLAttributes['data-font'] && `color:${HTMLAttributes['data-font']}`,
+    ]
+      .filter(Boolean)
+      .join(';');
+
+    return [
+      'aside',
+      mergeAttributes(HTMLAttributes, { class: 'Scribe-info', ...(style ? { style } : {}) }),
+      0,
+    ];
+  },
+});
+
+/**
+ * No attributes, no title — content only. Vocabulary::EXTRA_TEMPLATES
+ * ['SCRIBEREPLY'] + ReplyGate::class (a Formatter render callback) decide
+ * server-side whether the viewer has replied to this discussion; when they
+ * haven't, the real children are never copied into the rendered XML at all.
+ * A CSS-only hide would still ship the real HTML in the page source, which
+ * defeats the entire point of a reply gate.
+ */
+export const ScribeReply = Node.create({
+  name: 'scribeReply',
+  group: 'block',
+  content: 'block+',
+  defining: true,
+  parseHTML() {
+    return [{ tag: 'section.Scribe-replyGate' }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['section', mergeAttributes(HTMLAttributes, { class: 'Scribe-replyGate' }), 0];
+  },
+});
+
+/**
+ * Alignment lives in `data-align` on the paragraph/heading itself, never in a
+ * `style` attribute — same reasoning as ScribeColor above: a style string has
+ * to be re-parsed and sanitised server-side, a bare attribute has one filter
+ * (see Vocabulary::ATTRIBUTES['P']/['H2'] etc. — #simpletext).
+ */
+export const ScribeAlign = Extension.create({
+  name: 'scribeAlign',
+  addOptions() {
+    return { types: ['paragraph', 'heading'] as string[] };
+  },
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          align: {
+            default: null,
+            parseHTML: (el: HTMLElement) => el.getAttribute('data-align'),
+            renderHTML: (attrs: Record<string, any>) =>
+              attrs.align ? { 'data-align': attrs.align } : {},
+          },
+        },
+      },
+    ];
+  },
+  addCommands() {
+    return {
+      setAlign:
+        (align: string) =>
+        ({ commands }: any) =>
+          this.options.types.every((type: string) => commands.updateAttributes(type, { align })),
+    } as any;
   },
 });
 
@@ -86,12 +258,16 @@ export function buildExtensions(placeholder: string) {
     HorizontalRule,
     Link.configure({ openOnClick: false, autolink: true }),
     Image,
-    Highlight,
+    Highlight.configure({ multicolor: true }),
     History,
     Dropcursor,
     Gapcursor,
     TextStyle,
     ScribeColor,
+    ScribeAlign,
+    ScribeSpoiler,
+    ScribeInfo,
+    ScribeReply,
     Table.configure({ resizable: true }),
     TableRow,
     TableHeader,

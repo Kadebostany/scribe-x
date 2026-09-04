@@ -56,9 +56,14 @@ abstract class Vocabulary
     /**
      * Structural elements kept as themselves. s9e renders a lowercase element
      * literally, so these need no template — and legacy posts already contain
-     * bare <p>/<br/>, which is why they survive markdown being removed.
+     * bare <br/>, which is why it survives markdown being removed.
+     *
+     * 🚨 `p` used to live here too. It moved to EXTRA_ELEMENTS/EXTRA_TEMPLATES
+     * so it can carry an `align` attribute like H1-H6 do — the rendered output
+     * for a plain paragraph (no align) is byte-identical either way, so legacy
+     * posts are unaffected.
      */
-    public const PASSTHROUGH = ['p', 'br'];
+    public const PASSTHROUGH = ['br'];
 
     /**
      * Canonical templates, verbatim from Litedown. Only the tags nothing else
@@ -73,12 +78,12 @@ abstract class Vocabulary
         'DEL'    => '<del><xsl:apply-templates/></del>',
         'EM'     => '<em><xsl:apply-templates/></em>',
         'EMAIL'  => '<a href="mailto:{@email}"><xsl:apply-templates/></a>',
-        'H1'     => '<h1><xsl:apply-templates/></h1>',
-        'H2'     => '<h2><xsl:apply-templates/></h2>',
-        'H3'     => '<h3><xsl:apply-templates/></h3>',
-        'H4'     => '<h4><xsl:apply-templates/></h4>',
-        'H5'     => '<h5><xsl:apply-templates/></h5>',
-        'H6'     => '<h6><xsl:apply-templates/></h6>',
+        'H1'     => '<h1><xsl:if test="@align"><xsl:attribute name="style"><xsl:text>text-align:</xsl:text><xsl:value-of select="@align"/></xsl:attribute></xsl:if><xsl:apply-templates/></h1>',
+        'H2'     => '<h2><xsl:if test="@align"><xsl:attribute name="style"><xsl:text>text-align:</xsl:text><xsl:value-of select="@align"/></xsl:attribute></xsl:if><xsl:apply-templates/></h2>',
+        'H3'     => '<h3><xsl:if test="@align"><xsl:attribute name="style"><xsl:text>text-align:</xsl:text><xsl:value-of select="@align"/></xsl:attribute></xsl:if><xsl:apply-templates/></h3>',
+        'H4'     => '<h4><xsl:if test="@align"><xsl:attribute name="style"><xsl:text>text-align:</xsl:text><xsl:value-of select="@align"/></xsl:attribute></xsl:if><xsl:apply-templates/></h4>',
+        'H5'     => '<h5><xsl:if test="@align"><xsl:attribute name="style"><xsl:text>text-align:</xsl:text><xsl:value-of select="@align"/></xsl:attribute></xsl:if><xsl:apply-templates/></h5>',
+        'H6'     => '<h6><xsl:if test="@align"><xsl:attribute name="style"><xsl:text>text-align:</xsl:text><xsl:value-of select="@align"/></xsl:attribute></xsl:if><xsl:apply-templates/></h6>',
         'HR'     => '<hr/>',
         'IMG'    => '<img src="{@src}"><xsl:copy-of select="@alt"/><xsl:copy-of select="@title"/></img>',
         'LI'     => '<li><xsl:apply-templates/></li>',
@@ -101,20 +106,41 @@ abstract class Vocabulary
      * post can contain these tags, so we own them outright.
      */
     public const EXTRA_ELEMENTS = [
-        'u'     => 'U',
-        'mark'  => 'MARK',
-        'table' => 'TABLE',
-        'thead' => 'THEAD',
-        'tbody' => 'TBODY',
-        'tr'    => 'TR',
-        'th'    => 'TH',
-        'td'    => 'TD',
-        'span'  => 'SPAN',
+        'p'       => 'P',
+        'u'       => 'U',
+        'mark'    => 'MARK',
+        'table'   => 'TABLE',
+        'thead'   => 'THEAD',
+        'tbody'   => 'TBODY',
+        'tr'      => 'TR',
+        'th'      => 'TH',
+        'td'      => 'TD',
+        'span'    => 'SPAN',
+        'details' => 'SCRIBESPOILER',
+        'aside'   => 'SCRIBEINFO',
+        'section' => 'SCRIBEREPLY',
     ];
 
     public const EXTRA_TEMPLATES = [
+        /*
+         * Same shape s9e's own HTMLElements passthrough produced for a plain
+         * <p> — the only addition is the conditional align style, so a
+         * paragraph without one renders byte-identical to before.
+         */
+        'P'     => '<p><xsl:if test="@align"><xsl:attribute name="style"><xsl:text>text-align:</xsl:text><xsl:value-of select="@align"/></xsl:attribute></xsl:if><xsl:apply-templates/></p>',
         'U'     => '<u><xsl:apply-templates/></u>',
-        'MARK'  => '<mark><xsl:apply-templates/></mark>',
+        /*
+         * 🚨 Same `#color`-filtered `data-color` boundary as SPAN below, just
+         * background instead of text — TipTap's own Highlight extension in
+         * `multicolor` mode already emits `data-color`, so nothing bespoke was
+         * needed client-side.
+         *
+         * 🚨 `data-color` is re-emitted here, not just `style`. Re-opening a
+         * coloured/highlighted post for editing loads this rendered HTML, and
+         * ScribeColor/Highlight's parseHTML looks for the attribute — a
+         * style-only render would silently lose the mark on every re-edit.
+         */
+        'MARK'  => '<mark><xsl:if test="@color"><xsl:attribute name="data-color"><xsl:value-of select="@color"/></xsl:attribute><xsl:attribute name="style"><xsl:text>background-color:</xsl:text><xsl:value-of select="@color"/></xsl:attribute></xsl:if><xsl:apply-templates/></mark>',
         'TABLE' => '<div class="Scribe-tableWrap"><table><xsl:apply-templates/></table></div>',
         'THEAD' => '<thead><xsl:apply-templates/></thead>',
         'TBODY' => '<tbody><xsl:apply-templates/></tbody>',
@@ -127,7 +153,39 @@ abstract class Vocabulary
          * concatenated by hand is a stored-XSS hole: "red;background:url(...)"
          * is a perfectly ordinary-looking colour until it isn't.
          */
-        'SPAN'  => '<span><xsl:if test="@color"><xsl:attribute name="style"><xsl:text>color:</xsl:text><xsl:value-of select="@color"/></xsl:attribute></xsl:if><xsl:apply-templates/></span>',
+        'SPAN'  => '<span><xsl:if test="@color"><xsl:attribute name="data-color"><xsl:value-of select="@color"/></xsl:attribute><xsl:attribute name="style"><xsl:text>color:</xsl:text><xsl:value-of select="@color"/></xsl:attribute></xsl:if><xsl:apply-templates/></span>',
+        /*
+         * 🚨 The editor emits a bare `<details data-title>` with no <summary> —
+         * the title bar and the body wrapper below are render-time-only, added
+         * here rather than shipped from the client, so the server is the one
+         * place that decides what a spoiler looks like. `data-title` is
+         * mirrored back onto the tag itself (not just into <summary>'s text)
+         * so re-opening the post for editing recognises it — see ScribeSpoiler's
+         * parseHTML, which reads `[data-title]` and ignores <summary> entirely.
+         */
+        'SCRIBESPOILER' => '<details class="Scribe-spoiler"><xsl:if test="@label"><xsl:attribute name="data-title"><xsl:value-of select="@label"/></xsl:attribute></xsl:if><summary><xsl:value-of select="@label"/></summary><div class="Scribe-spoilerBody"><xsl:apply-templates/></div></details>',
+        /*
+         * 🚨 Same three-colour shape as magicbb's [info title=… font=… bg=…
+         * border=…], collapsed to the one visual style this forum actually
+         * uses — no success/warning/error variants, because nobody asked for
+         * more than one. font/bg/border go through #color exactly like SPAN's
+         * colour; there is no free-text style path here either.
+         */
+        'SCRIBEINFO'  => '<aside class="Scribe-info"><xsl:if test="@label"><xsl:attribute name="data-title"><xsl:value-of select="@label"/></xsl:attribute></xsl:if><xsl:if test="@font"><xsl:attribute name="data-font"><xsl:value-of select="@font"/></xsl:attribute></xsl:if><xsl:if test="@bg"><xsl:attribute name="data-bg"><xsl:value-of select="@bg"/></xsl:attribute></xsl:if><xsl:if test="@border"><xsl:attribute name="data-border"><xsl:value-of select="@border"/></xsl:attribute></xsl:if><xsl:if test="@bg or @border or @font"><xsl:attribute name="style"><xsl:if test="@bg">background:<xsl:value-of select="@bg"/>;</xsl:if><xsl:if test="@border">border-color:<xsl:value-of select="@border"/>;</xsl:if><xsl:if test="@font">color:<xsl:value-of select="@font"/>;</xsl:if></xsl:attribute></xsl:if><xsl:if test="@label"><div class="Scribe-infoTitle"><xsl:value-of select="@label"/></div></xsl:if><div class="Scribe-infoBody"><xsl:apply-templates/></div></aside>',
+        /*
+         * 🚨 Deliberately NOT enforced server-side. An earlier version used
+         * an s9e rendering parameter to omit the real children from the XML
+         * entirely unless the viewer had replied — airtight, but it meant
+         * "just replied" never unlocked the block without a full page
+         * reload, because the HTML is only computed once per request. This
+         * forum doesn't need airtight (it's members-only already, and
+         * nobody's inspecting page source for it) — both the locked message
+         * and the real content ship every time, and js/src/forum/replyGate.ts
+         * toggles which one is visible, client-side, reactively. It updates
+         * the instant a reply posts because it reads the same store the
+         * reply just landed in — no server round trip, no reload.
+         */
+        'SCRIBEREPLY' => '<div class="Scribe-replyGate"><p class="Scribe-replyGateLocked">Bu içeriği görmek için yorum yapmalısın.</p><div class="Scribe-replyGateBody"><xsl:apply-templates/></div></div>',
     ];
 
     /**
@@ -144,6 +202,29 @@ abstract class Vocabulary
         'TH'    => ['colspan' => '#uint', 'rowspan' => '#uint', 'align' => '#simpletext'],
         'TD'    => ['colspan' => '#uint', 'rowspan' => '#uint', 'align' => '#simpletext'],
         'SPAN'  => ['color' => '#color'],
+        /*
+         * 🚨 Same interpolation shape as TH/TD's `align`: the value lands
+         * inside a `style` attribute, so #simpletext (letters/digits/space/
+         * ./,/_/-/+ only, no `;`, `:` or `(`) is the security boundary, not
+         * the template. It cannot break out into a second declaration.
+         */
+        'P'     => ['align' => '#simpletext'],
+        'H1'    => ['align' => '#simpletext'],
+        'H2'    => ['align' => '#simpletext'],
+        'H3'    => ['align' => '#simpletext'],
+        'H4'    => ['align' => '#simpletext'],
+        'H5'    => ['align' => '#simpletext'],
+        'H6'    => ['align' => '#simpletext'],
+        'MARK'  => ['color' => '#color'],
+        /*
+         * 🚨 `#title` is not an s9e built-in — see Configure::resolveFilter.
+         * #simpletext is ASCII-only and would reject "başlık"; the value only
+         * ever lands in a text node via xsl:value-of (auto-escaped), never
+         * interpolated into an attribute or style, so it doesn't need
+         * #simpletext's CSS-safety guarantee either.
+         */
+        'SCRIBESPOILER' => ['label' => '#title'],
+        'SCRIBEINFO'    => ['label' => '#title', 'font' => '#color', 'bg' => '#color', 'border' => '#color'],
     ];
 
     /**
@@ -161,5 +242,9 @@ abstract class Vocabulary
         'lang'  => 'data-lang',
         'type'  => 'data-type',
         'align' => 'data-align',
+        'label'  => 'data-title',
+        'font'   => 'data-font',
+        'bg'     => 'data-bg',
+        'border' => 'data-border',
     ];
 }

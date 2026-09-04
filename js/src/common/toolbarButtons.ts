@@ -1,5 +1,10 @@
 import type { Editor } from '@tiptap/core';
 
+/** scribeAlign is a global attribute, not a mark/node — check both host types. */
+function isAlign(e: Editor, align: string): boolean {
+  return e.getAttributes('paragraph').align === align || e.getAttributes('heading').align === align;
+}
+
 export interface ScribeButton {
   key: string;
   icon: string;
@@ -12,7 +17,7 @@ export interface ScribeButton {
   /** Absent when the button opens a form instead of acting immediately. */
   run?: (e: Editor) => void;
   /** Opens a form rather than toggling immediately. */
-  prompt?: 'link' | 'image' | 'color';
+  prompt?: 'link' | 'image' | 'color' | 'highlight' | 'spoiler' | 'info';
   /**
    * A short suffix drawn on the icon.
    *
@@ -44,8 +49,8 @@ export const SCRIBE_BUTTONS: ScribeButton[] = [
     active: (e) => e.isActive('code'), run: (e) => e.chain().focus().toggleCode().run() },
   { key: 'color', icon: 'fas fa-palette', label: 'text_color', prompt: 'color',
     active: (e) => e.isActive('scribeColor') },
-  { key: 'highlight', icon: 'fas fa-highlighter', label: 'highlight',
-    active: (e) => e.isActive('highlight'), run: (e) => e.chain().focus().toggleHighlight().run() },
+  { key: 'highlight', icon: 'fas fa-highlighter', label: 'highlight', prompt: 'highlight',
+    active: (e) => e.isActive('highlight') },
   { key: 'heading2', icon: 'fas fa-heading', label: 'heading', badge: '2',
     active: (e) => e.isActive('heading', { level: 2 }),
     run: (e) => e.chain().focus().toggleHeading({ level: 2 }).run() },
@@ -58,8 +63,22 @@ export const SCRIBE_BUTTONS: ScribeButton[] = [
     active: (e) => e.isActive('orderedList'), run: (e) => e.chain().focus().toggleOrderedList().run() },
   { key: 'blockquote', icon: 'fas fa-quote-left', label: 'quote',
     active: (e) => e.isActive('blockquote'), run: (e) => e.chain().focus().toggleBlockquote().run() },
+  { key: 'alignLeft', icon: 'fas fa-align-left', label: 'align_left',
+    active: (e) => isAlign(e, 'left'), run: (e) => (e.chain().focus() as any).setAlign('left').run() },
+  { key: 'alignCenter', icon: 'fas fa-align-center', label: 'align_center',
+    active: (e) => isAlign(e, 'center'), run: (e) => (e.chain().focus() as any).setAlign('center').run() },
+  { key: 'alignRight', icon: 'fas fa-align-right', label: 'align_right',
+    active: (e) => isAlign(e, 'right'), run: (e) => (e.chain().focus() as any).setAlign('right').run() },
+  { key: 'alignJustify', icon: 'fas fa-align-justify', label: 'align_justify',
+    active: (e) => isAlign(e, 'justify'), run: (e) => (e.chain().focus() as any).setAlign('justify').run() },
   { key: 'codeBlock', icon: 'fas fa-file-code', label: 'code_block',
     active: (e) => e.isActive('codeBlock'), run: (e) => e.chain().focus().toggleCodeBlock().run() },
+  { key: 'spoiler', icon: 'fas fa-eye-slash', label: 'spoiler', prompt: 'spoiler',
+    active: (e) => e.isActive('scribeSpoiler') },
+  { key: 'info', icon: 'fas fa-circle-info', label: 'info_box', prompt: 'info',
+    active: (e) => e.isActive('scribeInfo') },
+  { key: 'replyGate', icon: 'fas fa-lock', label: 'reply_gate',
+    active: (e) => e.isActive('scribeReply'), run: (e) => e.chain().focus().wrapIn('scribeReply').run() },
   { key: 'link', icon: 'fas fa-link', label: 'link', prompt: 'link',
     active: (e) => e.isActive('link') },
   { key: 'image', icon: 'fas fa-image', label: 'image', prompt: 'image' },
