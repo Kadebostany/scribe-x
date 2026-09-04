@@ -4,7 +4,13 @@ import type { ComponentAttrs } from 'flarum/common/Component';
 import Button from 'flarum/common/components/Button';
 import Tooltip from 'flarum/common/components/Tooltip';
 import type { Editor } from '@tiptap/core';
-import { buttonsFor, DEFAULT_TOOLBAR, type ScribeButton } from '../toolbarButtons';
+import {
+  buttonsFor,
+  DEFAULT_TOOLBAR,
+  ALIGN_ACTIONS,
+  TABLE_ACTIONS,
+  type ScribeButton,
+} from '../toolbarButtons';
 
 export interface ScribeToolbarAttrs extends ComponentAttrs {
   editor?: Editor;
@@ -41,11 +47,24 @@ function toPickerHex(value: string): string {
 const INFO_DEFAULTS = { font: '#1E2019', bg: '#B8D3D1', border: '#B8D3D1' };
 
 export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
-  prompt: 'link' | 'image' | 'color' | 'highlight' | 'spoiler' | 'info' | null = null;
+  prompt:
+    | 'link'
+    | 'image'
+    | 'color'
+    | 'highlight'
+    | 'spoiler'
+    | 'info'
+    | 'table'
+    | 'alignMenu'
+    | 'tableMenu'
+    | null = null;
   value = '';
   infoFont = INFO_DEFAULTS.font;
   infoBg = INFO_DEFAULTS.bg;
   infoBorder = INFO_DEFAULTS.border;
+  /** No lower bound — a 1×1 table is a valid table, not an error case. */
+  tableRows = 3;
+  tableCols = 3;
   /**
    * 🚨 Not a custom picker — just a text field the OS/browser's own emoji
    * keyboard (Win+. / Cmd+Ctrl+Space / mobile emoji key) can type into.
@@ -105,6 +124,36 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
     );
   }
 
+  /**
+   * A button inside a group dropdown (align, table) — same look as a normal
+   * toolbar button, but deliberately does NOT close the dropdown after
+   * running. Applying an align option or adding three rows in a row means
+   * clicking this menu repeatedly; forcing a re-open after every click was
+   * the opposite of what grouping them was for. The dropdown only closes
+   * when its own toolbar button is toggled again (see `openPrompt`).
+   */
+  menuItem(b: ScribeButton, editor: Editor) {
+    const label = app.translator.trans(`ernestdefoe-scribe.lib.buttons.${b.label}`);
+    const active = b.active?.(editor) ?? false;
+
+    return (
+      <Tooltip text={label}>
+        {Button.component({
+          className: 'Button Button--icon Button--link Scribe-toolbarButton' + (active ? ' is-active' : ''),
+          icon: b.icon,
+          'aria-pressed': active ? 'true' : 'false',
+          'aria-label': label,
+          'data-badge': b.badge,
+          disabled: b.enabled ? !b.enabled(editor) : false,
+          onclick: () => {
+            b.run?.(editor);
+            this.attrs.onChange();
+          },
+        })}
+      </Tooltip>
+    );
+  }
+
   openPrompt(kind: NonNullable<ScribeButton['prompt']>, editor: Editor) {
     // Reopening the same prompt closes it, so the button toggles.
     this.prompt = this.prompt === kind ? null : kind;
@@ -117,6 +166,9 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
       this.infoFont = attrs.font ?? INFO_DEFAULTS.font;
       this.infoBg = attrs.bg ?? INFO_DEFAULTS.bg;
       this.infoBorder = attrs.border ?? INFO_DEFAULTS.border;
+    } else if (kind === 'table') {
+      this.tableRows = 3;
+      this.tableCols = 3;
     } else this.value = '';
   }
 
@@ -203,6 +255,63 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
               },
             },
             app.translator.trans(`ernestdefoe-scribe.forum.composer.${clearKey}`)
+          )}
+        </div>
+      );
+    }
+
+    if (kind === 'alignMenu') {
+      return (
+        <div className="Scribe-prompt Scribe-prompt--menu">
+          {ALIGN_ACTIONS.map((b) => this.menuItem(b, editor))}
+        </div>
+      );
+    }
+
+    if (kind === 'tableMenu') {
+      // Reuses the existing prompt machinery: this item has its own
+      // `prompt: 'table'`, so `this.button()` opens the size-picker below
+      // exactly the way any other prompt button does — no special-casing.
+      const insertTable: ScribeButton = { key: 'insertTable', icon: 'fas fa-table', label: 'table', prompt: 'table' };
+
+      return (
+        <div className="Scribe-prompt Scribe-prompt--menu">
+          {this.button(insertTable, editor)}
+          {TABLE_ACTIONS.map((b) => this.menuItem(b, editor))}
+        </div>
+      );
+    }
+
+    if (kind === 'table') {
+      const clamp = (n: number) => Math.max(1, Math.min(50, Math.floor(n) || 1));
+      const apply = () => {
+        editor
+          .chain()
+          .focus()
+          .insertTable({ rows: clamp(this.tableRows), cols: clamp(this.tableCols), withHeaderRow: true })
+          .run();
+        close();
+      };
+      const sizeField = (value: number, set: (n: number) => void, label: string) => (
+        <input
+          className="FormControl Scribe-promptInput Scribe-promptNumber"
+          type="number"
+          min={1}
+          max={50}
+          aria-label={label}
+          value={value}
+          oninput={(e: any) => set(e.target.valueAsNumber)}
+        />
+      );
+
+      return (
+        <div className="Scribe-prompt">
+          {sizeField(this.tableRows, (n) => (this.tableRows = n), 'rows')}
+          <span aria-hidden="true">×</span>
+          {sizeField(this.tableCols, (n) => (this.tableCols = n), 'columns')}
+          {Button.component(
+            { className: 'Button Button--primary Scribe-promptApply', onclick: apply },
+            app.translator.trans('ernestdefoe-scribe.forum.composer.apply')
           )}
         </div>
       );

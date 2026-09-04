@@ -68,6 +68,10 @@
   border-bottom: 1px solid var(--scribe-line, rgba(0, 0, 0, 0.14));
 }
 
+.Scribe-prompt--menu {
+  flex-wrap: wrap;
+}
+
 .Scribe-promptInput {
   /* Takes the room it needs; the Apply button keeps its natural width. */
   flex: 1;
@@ -76,6 +80,11 @@
 
 .Scribe-promptEmoji {
   flex: 0 0 44px;
+  text-align: center;
+}
+
+.Scribe-promptNumber {
+  flex: 0 0 56px;
   text-align: center;
 }
 
@@ -316,10 +325,15 @@
       td, th {
         border: 1px solid var(--scribe-line, rgba(0, 0, 0, 0.15));
         padding: 5px 8px;
-        vertical-align: top;
+        vertical-align: middle;
         /* Without this a long word in one cell widens the whole table. */
         min-width: 0;
         word-break: break-word;
+
+        /* The browser's own default <p> margin (~1em) still applies inside
+           a cell — `vertical-align: middle` centres that whole margin box,
+           not the text, so the text itself sits off-centre. */
+        p { margin: 0; }
       }
 
       th {
@@ -399,7 +413,10 @@
   th, td {
     padding: 10px 16px;
     text-align: left;
+    vertical-align: middle;
     border-radius: 6px;
+
+    p { margin: 0; }
   }
 
   /*

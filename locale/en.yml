@@ -21,6 +21,7 @@ ernestdefoe-scribe:
       bullet_list: Bulleted list
       ordered_list: Numbered list
       quote: Quote
+      align: Align
       align_left: Align left
       align_center: Align center
       align_right: Align right
@@ -32,6 +33,11 @@ ernestdefoe-scribe:
       link: Link
       image: Image
       table: Table
+      toggle_header_cell: Toggle header cell
+      add_row: Add row
+      delete_row: Delete row
+      add_column: Add column
+      delete_column: Delete column
       horizontal_rule: Divider
       undo: Undo
       redo: Redo

@@ -21,7 +21,7 @@ export interface ScribeButton {
   /** Absent when the button opens a form instead of acting immediately. */
   run?: (e: Editor) => void;
   /** Opens a form rather than toggling immediately. */
-  prompt?: 'link' | 'image' | 'color' | 'highlight' | 'spoiler' | 'info';
+  prompt?: 'link' | 'image' | 'color' | 'highlight' | 'spoiler' | 'info' | 'table' | 'alignMenu' | 'tableMenu';
   /**
    * A short suffix drawn on the icon.
    *
@@ -77,14 +77,8 @@ export const SCRIBE_BUTTONS: ScribeButton[] = [
     active: (e) => e.isActive('orderedList'), run: (e) => e.chain().focus().toggleOrderedList().run() },
   { key: 'blockquote', icon: 'fas fa-quote-left', label: 'quote',
     active: (e) => e.isActive('blockquote'), run: (e) => e.chain().focus().toggleBlockquote().run() },
-  { key: 'alignLeft', icon: 'fas fa-align-left', label: 'align_left',
-    active: (e) => isAlign(e, 'left'), run: (e) => (e.chain().focus() as any).setAlign('left').run() },
-  { key: 'alignCenter', icon: 'fas fa-align-center', label: 'align_center',
-    active: (e) => isAlign(e, 'center'), run: (e) => (e.chain().focus() as any).setAlign('center').run() },
-  { key: 'alignRight', icon: 'fas fa-align-right', label: 'align_right',
-    active: (e) => isAlign(e, 'right'), run: (e) => (e.chain().focus() as any).setAlign('right').run() },
-  { key: 'alignJustify', icon: 'fas fa-align-justify', label: 'align_justify',
-    active: (e) => isAlign(e, 'justify'), run: (e) => (e.chain().focus() as any).setAlign('justify').run() },
+  { key: 'align', icon: 'fas fa-align-left', label: 'align', prompt: 'alignMenu',
+    active: (e) => isAlign(e, 'left') || isAlign(e, 'center') || isAlign(e, 'right') || isAlign(e, 'justify') },
   { key: 'codeBlock', icon: 'fas fa-file-code', label: 'code_block',
     active: (e) => e.isActive('codeBlock'), run: (e) => e.chain().focus().toggleCodeBlock().run() },
   { key: 'spoiler', icon: 'fas fa-eye-slash', label: 'spoiler', prompt: 'spoiler',
@@ -96,8 +90,7 @@ export const SCRIBE_BUTTONS: ScribeButton[] = [
   { key: 'link', icon: 'fas fa-link', label: 'link', prompt: 'link',
     active: (e) => e.isActive('link') },
   { key: 'image', icon: 'fas fa-image', label: 'image', prompt: 'image' },
-  { key: 'table', icon: 'fas fa-table', label: 'table',
-    run: (e) => e.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run() },
+  { key: 'table', icon: 'fas fa-table', label: 'table', prompt: 'tableMenu' },
   { key: 'horizontalRule', icon: 'fas fa-minus', label: 'horizontal_rule',
     run: (e) => e.chain().focus().setHorizontalRule().run() },
   { key: 'undo', icon: 'fas fa-undo', label: 'undo',
@@ -111,6 +104,44 @@ export const DEFAULT_TOOLBAR = [
   'bold', 'italic', 'strike', 'code',
   'heading2', 'bulletList', 'orderedList', 'blockquote', 'codeBlock',
   'link', 'image',
+];
+
+/**
+ * The four options behind the "align" toolbar entry's dropdown. Not part of
+ * SCRIBE_BUTTONS — the admin toolbar builder shouldn't offer these as four
+ * separate slots to drag in individually, that's exactly the clutter the
+ * group button exists to avoid.
+ */
+export const ALIGN_ACTIONS: ScribeButton[] = [
+  { key: 'alignLeft', icon: 'fas fa-align-left', label: 'align_left',
+    active: (e) => isAlign(e, 'left'), run: (e) => (e.chain().focus() as any).setAlign('left').run() },
+  { key: 'alignCenter', icon: 'fas fa-align-center', label: 'align_center',
+    active: (e) => isAlign(e, 'center'), run: (e) => (e.chain().focus() as any).setAlign('center').run() },
+  { key: 'alignRight', icon: 'fas fa-align-right', label: 'align_right',
+    active: (e) => isAlign(e, 'right'), run: (e) => (e.chain().focus() as any).setAlign('right').run() },
+  { key: 'alignJustify', icon: 'fas fa-align-justify', label: 'align_justify',
+    active: (e) => isAlign(e, 'justify'), run: (e) => (e.chain().focus() as any).setAlign('justify').run() },
+];
+
+/**
+ * The row/column/header actions behind the "table" toolbar entry's
+ * dropdown, alongside its own size-picker prompt (kind 'table', handled
+ * separately in ScribeToolbar since it needs number inputs, not just an
+ * icon click). Same reasoning as ALIGN_ACTIONS above — not in SCRIBE_BUTTONS.
+ */
+export const TABLE_ACTIONS: ScribeButton[] = [
+  { key: 'toggleHeaderCell', icon: 'fas fa-table-cells', label: 'toggle_header_cell',
+    active: (e) => e.isActive('tableHeader'),
+    enabled: (e) => e.can().toggleHeaderCell(),
+    run: (e) => (e.chain().focus() as any).toggleHeaderCell().run() },
+  { key: 'addRowAfter', icon: 'fas fa-table-list', label: 'add_row', badge: '+',
+    enabled: (e) => e.can().addRowAfter(), run: (e) => e.chain().focus().addRowAfter().run() },
+  { key: 'deleteRow', icon: 'fas fa-table-list', label: 'delete_row', badge: '−',
+    enabled: (e) => e.can().deleteRow(), run: (e) => e.chain().focus().deleteRow().run() },
+  { key: 'addColumnAfter', icon: 'fas fa-table-columns', label: 'add_column', badge: '+',
+    enabled: (e) => e.can().addColumnAfter(), run: (e) => e.chain().focus().addColumnAfter().run() },
+  { key: 'deleteColumn', icon: 'fas fa-table-columns', label: 'delete_column', badge: '−',
+    enabled: (e) => e.can().deleteColumn(), run: (e) => e.chain().focus().deleteColumn().run() },
 ];
 
 export function buttonsFor(keys: string[]): ScribeButton[] {
