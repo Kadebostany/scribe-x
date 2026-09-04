@@ -1,8 +1,12 @@
 import type { Editor } from '@tiptap/core';
 
-/** scribeAlign is a global attribute, not a mark/node — check both host types. */
+/** scribeAlign is a global attribute, not a mark/node — check every host type. */
 function isAlign(e: Editor, align: string): boolean {
-  return e.getAttributes('paragraph').align === align || e.getAttributes('heading').align === align;
+  return (
+    e.getAttributes('paragraph').align === align ||
+    e.getAttributes('heading').align === align ||
+    e.getAttributes('scribeImageAlign').align === align
+  );
 }
 
 export interface ScribeButton {

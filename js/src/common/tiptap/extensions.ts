@@ -191,10 +191,44 @@ export const ScribeReply = Node.create({
 });
 
 /**
- * Alignment lives in `data-align` on the paragraph/heading itself, never in a
- * `style` attribute — same reasoning as ScribeColor above: a style string has
- * to be re-parsed and sanitised server-side, a bare attribute has one filter
- * (see Vocabulary::ATTRIBUTES['P']/['H2'] etc. — #simpletext).
+ * A wrapper, not an attribute directly on `<img>`. `IMG` is a tag
+ * `flarum/bbcode` claims when it's enabled (Vocabulary's own comment on
+ * ELEMENTS documents this — CODE/DEL/EMAIL/IMG/LI/LIST/QUOTE/URL), so an
+ * attribute added to Scribe's copy of IMG's definition never actually
+ * registers: `registerTags` skips the whole tag once flarum/bbcode has
+ * already claimed the name, exactly like the SPOILER/INFO tag-name
+ * collision earlier this session. A `<figure>` wrapper is a tag name
+ * nobody else has any reason to claim.
+ */
+export const ScribeImageAlign = Node.create({
+  name: 'scribeImageAlign',
+  group: 'block',
+  content: 'block+',
+  defining: true,
+  addAttributes() {
+    return {
+      align: {
+        default: null,
+        parseHTML: (el: HTMLElement) => el.getAttribute('data-align'),
+        renderHTML: (attrs: Record<string, any>) =>
+          attrs.align ? { 'data-align': attrs.align } : {},
+      },
+    };
+  },
+  parseHTML() {
+    return [{ tag: 'figure.Scribe-imgAlign' }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['figure', mergeAttributes(HTMLAttributes, { class: 'Scribe-imgAlign' }), 0];
+  },
+});
+
+/**
+ * Alignment lives in `data-align` on the paragraph/heading itself, never in
+ * a `style` attribute — same reasoning as ScribeColor above: a style string
+ * has to be re-parsed and sanitised server-side, a bare attribute has one
+ * filter (see Vocabulary::ATTRIBUTES['P']/['H2'] — #simpletext). Images go
+ * through ScribeImageAlign above instead — see its own comment for why.
  */
 export const ScribeAlign = Extension.create({
   name: 'scribeAlign',
@@ -218,10 +252,32 @@ export const ScribeAlign = Extension.create({
   },
   addCommands() {
     return {
+      /*
+       * 🚨 `.map().some()`, not `.every()`. `updateAttributes(type, …)`
+       * returns false when the selection isn't inside that node type — with
+       * `.every()`, Array.prototype short-circuits on the FIRST false, so a
+       * selection that wasn't a paragraph meant `heading` was never even
+       * attempted either. Silently did nothing for anything but the first
+       * type in the list.
+       *
+       * Images are a separate case: not an attribute in `types` above, but
+       * a wrap/update on the `scribeImageAlign` figure — see
+       * ScribeImageAlign's own comment for why `<img>` can't carry this
+       * attribute directly.
+       */
       setAlign:
         (align: string) =>
-        ({ commands }: any) =>
-          this.options.types.every((type: string) => commands.updateAttributes(type, { align })),
+        ({ commands }: any) => {
+          const onTextBlock = this.options.types
+            .map((type: string) => commands.updateAttributes(type, { align }))
+            .some(Boolean);
+          if (onTextBlock) return true;
+
+          return (
+            commands.updateAttributes('scribeImageAlign', { align }) ||
+            commands.wrapIn('scribeImageAlign', { align })
+          );
+        },
     } as any;
   },
 });
@@ -257,7 +313,14 @@ export function buildExtensions(placeholder: string) {
     HardBreak,
     HorizontalRule,
     Link.configure({ openOnClick: false, autolink: true }),
-    Image,
+    /*
+     * 🚨 `resize` is TipTap's own built-in — the corner-drag handles, the
+     * live nodeView while dragging, committing `width`/`height` onto the
+     * node on release, all of it. Nothing custom needed client-side; the
+     * only thing Scribe adds is the server side reading those two
+     * attributes back out (Vocabulary::ATTRIBUTES['IMG']).
+     */
+    Image.configure({ resize: { enabled: true, minWidth: 40, minHeight: 40 } }),
     Highlight.configure({ multicolor: true }),
     History,
     Dropcursor,
@@ -265,6 +328,7 @@ export function buildExtensions(placeholder: string) {
     TextStyle,
     ScribeColor,
     ScribeAlign,
+    ScribeImageAlign,
     ScribeSpoiler,
     ScribeInfo,
     ScribeReply,

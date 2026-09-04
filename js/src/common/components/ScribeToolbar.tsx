@@ -23,6 +23,20 @@ const COLOR_PROMPT_TARGET = {
 
 const HEX_PATTERN = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
 
+/**
+ * `<input type="color">` only ever accepts a full `#rrrrgg`-shaped 6-digit
+ * hex — an empty field, a 3-digit shorthand, or free text mid-typing would
+ * make the browser silently reset it to black. Widen 3-digit shorthand and
+ * fall back to black for anything else not yet valid, purely for what the
+ * picker swatch itself shows; the text field stays the source of truth.
+ */
+function toPickerHex(value: string): string {
+  const v = value.trim();
+  if (/^#[0-9a-f]{6}$/i.test(v)) return v;
+  const m = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/i.exec(v);
+  return m ? `#${m[1]}${m[1]}${m[2]}${m[2]}${m[3]}${m[3]}` : '#000000';
+}
+
 /** Preset defaults for the Info prompt's three colour fields. */
 const INFO_DEFAULTS = { font: '#1E2019', bg: '#B8D3D1', border: '#B8D3D1' };
 
@@ -142,6 +156,16 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
             />
           ))}
           <input
+            type="color"
+            className="Scribe-colorPicker"
+            aria-label="pick colour"
+            value={toPickerHex(this.value)}
+            oninput={(e: any) => {
+              this.value = e.target.value;
+              this.attrs.onChange();
+            }}
+          />
+          <input
             className="FormControl Scribe-promptInput Scribe-promptHex"
             type="text"
             placeholder="#f08c00"
@@ -237,15 +261,35 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
         close();
       };
 
-      const field = (value: string, set: (v: string) => void, placeholder: string, label: string) => (
-        <input
-          className="FormControl Scribe-promptInput"
-          type="text"
-          aria-label={label}
-          placeholder={placeholder}
-          value={value}
-          oninput={(e: any) => set(e.target.value)}
-        />
+      const field = (
+        value: string,
+        set: (v: string) => void,
+        placeholder: string,
+        label: string,
+        withPicker = false
+      ) => (
+        <span className="Scribe-colorField">
+          {withPicker && (
+            <input
+              type="color"
+              className="Scribe-colorPicker"
+              aria-label={`pick ${label}`}
+              value={toPickerHex(value)}
+              oninput={(e: any) => {
+                set(e.target.value);
+                this.attrs.onChange();
+              }}
+            />
+          )}
+          <input
+            className="FormControl Scribe-promptInput"
+            type="text"
+            aria-label={label}
+            placeholder={placeholder}
+            value={value}
+            oninput={(e: any) => set(e.target.value)}
+          />
+        </span>
       );
 
       return (
@@ -261,9 +305,9 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
           {field(this.value, (v) => (this.value = v),
             app.translator.trans('ernestdefoe-scribe.forum.composer.info_title_placeholder') as string,
             app.translator.trans('ernestdefoe-scribe.forum.composer.info_title_placeholder') as string)}
-          {field(this.infoFont, (v) => (this.infoFont = v), INFO_DEFAULTS.font, 'font colour')}
-          {field(this.infoBg, (v) => (this.infoBg = v), INFO_DEFAULTS.bg, 'background colour')}
-          {field(this.infoBorder, (v) => (this.infoBorder = v), INFO_DEFAULTS.border, 'border colour')}
+          {field(this.infoFont, (v) => (this.infoFont = v), INFO_DEFAULTS.font, 'font colour', true)}
+          {field(this.infoBg, (v) => (this.infoBg = v), INFO_DEFAULTS.bg, 'background colour', true)}
+          {field(this.infoBorder, (v) => (this.infoBorder = v), INFO_DEFAULTS.border, 'border colour', true)}
           {Button.component(
             { className: 'Button Button--primary Scribe-promptApply', onclick: apply },
             app.translator.trans('ernestdefoe-scribe.forum.composer.apply')

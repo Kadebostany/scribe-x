@@ -79,6 +79,30 @@
   text-align: center;
 }
 
+/* The native OS/browser colour picker, next to the free-form hex text field
+   it stays in sync with — see ScribeToolbar.tsx's `toPickerHex`. */
+.Scribe-colorPicker {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--scribe-line, rgba(0, 0, 0, 0.15));
+  border-radius: 4px;
+  cursor: pointer;
+  background: none;
+
+  &::-webkit-color-swatch-wrapper { padding: 2px; }
+  &::-webkit-color-swatch { border: none; border-radius: 2px; }
+}
+
+.Scribe-colorField {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
 .Scribe-swatch {
   width: 24px;
   height: 24px;
@@ -164,6 +188,60 @@
 
     img { max-width: 100%; height: auto; }
 
+    /*
+     * 🚨 Without this, clicking an image DOES select it — ProseMirror adds
+     * `.ProseMirror-selectednode` to the DOM node the moment it becomes a
+     * NodeSelection — but nothing on screen shows it, so from the user's
+     * side it looks exactly like the click did nothing. This is why the
+     * align buttons on a freshly-inserted, not-yet-wrapped image "didn't
+     * work": the selection existed, there was just no visible feedback that
+     * it had happened, so nothing suggested clicking Align a second time
+     * (after seeing no reaction) was worth trying at all.
+     */
+    .ProseMirror-selectednode {
+      outline: 3px solid var(--primary-color, #3b82f6);
+      outline-offset: 1px;
+      border-radius: 4px;
+    }
+
+    /*
+     * 🚨 Same story as `.ProseMirror-selectednode` above. TipTap's built-in
+     * resize (Image.configure({ resize: {...} })) only ever sets a handle's
+     * *position* (`top/right/bottom/left: 0`) — zero width, height, or
+     * background — so with no CSS at all the corner-drag targets exist and
+     * are grabbable in theory, but there's nothing on screen to see or aim
+     * a cursor at.
+     */
+    [data-resize-handle] {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: var(--primary-color, #3b82f6);
+      border: 2px solid #fff;
+      border-radius: 50%;
+      z-index: 5;
+    }
+    [data-resize-handle="top-left"],
+    [data-resize-handle="bottom-right"] { cursor: nwse-resize; }
+    [data-resize-handle="top-right"],
+    [data-resize-handle="bottom-left"] { cursor: nesw-resize; }
+
+    /* The align wrapper — see ScribeImageAlign's comment in extensions.ts
+       for why alignment lives on a <figure> around the image, not on the
+       <img> itself. */
+    .Scribe-imgAlign {
+      // `width: fit-content` so the figure hugs the image's own size —
+      // `margin: auto` on a full-width block does nothing to visually move it.
+      width: fit-content;
+      max-width: 100%;
+      margin: 0;
+
+      &[data-align="left"]    { margin-right: auto; }
+      &[data-align="center"],
+      &[data-align="justify"] { margin-left: auto; margin-right: auto; }
+      &[data-align="right"]   { margin-left: auto; }
+    }
+
     /* Mirrors Vocabulary::TEMPLATES' P/H1-H6 `@align` → `text-align` — the
        editor has no server-rendered style to inherit, so it needs its own copy. */
     [data-align="left"]    { text-align: left; }
@@ -248,7 +326,31 @@
         font-weight: 600;
         background: color-mix(in srgb, var(--text-color, #222) 6%, transparent);
       }
+
+      /* Cells need room to be a drop target, and a column can't be
+         narrower than its own handle plus a little breathing room. */
+      td, th { position: relative; min-width: 24px; }
     }
+
+    /*
+     * 🚨 `@tiptap/extension-table`'s own column-resize plugin (from
+     * prosemirror-tables, via `Table.configure({ resizable: true })`) — no
+     * visual cue was ever added for it, so the drag worked but nothing on
+     * screen showed a column even *could* be resized. Class names
+     * (`.column-resize-handle`, `.resize-cursor`) are the plugin's own,
+     * not ours to rename.
+     */
+    .column-resize-handle {
+      position: absolute;
+      right: -2px;
+      top: 0;
+      bottom: -2px;
+      width: 4px;
+      background: var(--primary-color, #3b82f6);
+      pointer-events: none;
+      z-index: 20;
+    }
+    &.resize-cursor { cursor: col-resize; }
 
     /* The placeholder is a pseudo-element on the first empty paragraph, so it
        must not be selectable or read as content. */
@@ -259,8 +361,21 @@
       height: 0;
       pointer-events: none;
     }
+
+    /*
+     * 🚨 A genuinely empty <p></p> — a deliberate blank line — collapses to
+     * ~0 height without this, so hitting Enter twice looked like it did
+     * nothing (users worked around it with an empty `:nothing:` emoji
+     * image, which is what this fix replaces).
+     */
+    p:empty { min-height: 1em; }
   }
 }
+
+/* Rendered posts: same fix as the editor's own copy above — a genuinely
+   empty <p></p> (a deliberate blank line) needs a forced height or it
+   collapses to nothing. */
+.Post-body p:empty { min-height: 1em; }
 
 /*
  * Rendered posts: the table wrapper the server emits. "Chip grid" look —
@@ -317,6 +432,20 @@
   td {
     background: #e4eaf7;
   }
+}
+
+/* Rendered posts: an aligned image. Same rules as the editor's own copy above. */
+.Post-body .Scribe-imgAlign {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+
+  &[data-align="left"]    { margin-right: auto; }
+  &[data-align="center"],
+  &[data-align="justify"] { margin-left: auto; margin-right: auto; }
+  &[data-align="right"]   { margin-left: auto; }
+
+  img { max-width: 100%; height: auto; display: block; }
 }
 
 /* Rendered posts: spoiler + info blocks. Colour comes from the server's

@@ -119,6 +119,7 @@ abstract class Vocabulary
         'details' => 'SCRIBESPOILER',
         'aside'   => 'SCRIBEINFO',
         'section' => 'SCRIBEREPLY',
+        'figure'  => 'SCRIBEIMGALIGN',
     ];
 
     public const EXTRA_TEMPLATES = [
@@ -145,8 +146,18 @@ abstract class Vocabulary
         'THEAD' => '<thead><xsl:apply-templates/></thead>',
         'TBODY' => '<tbody><xsl:apply-templates/></tbody>',
         'TR'    => '<tr><xsl:apply-templates/></tr>',
-        'TH'    => '<th><xsl:copy-of select="@colspan"/><xsl:copy-of select="@rowspan"/><xsl:if test="@align"><xsl:attribute name="style"><xsl:text>text-align:</xsl:text><xsl:value-of select="@align"/></xsl:attribute></xsl:if><xsl:apply-templates/></th>',
-        'TD'    => '<td><xsl:copy-of select="@colspan"/><xsl:copy-of select="@rowspan"/><xsl:if test="@align"><xsl:attribute name="style"><xsl:text>text-align:</xsl:text><xsl:value-of select="@align"/></xsl:attribute></xsl:if><xsl:apply-templates/></td>',
+        /*
+         * 🚨 `colwidth` is @tiptap/extension-table's own column-drag output
+         * (a comma list, one width per spanned column — see its
+         * `parseColwidth`). Only the first value is used here: rendering
+         * per-spanned-column widths precisely needs a <colgroup> matching
+         * every column in the table, not just this one cell's own width —
+         * out of scope for now. A single-column drag (the common case) gets
+         * exactly the width the user set; a resized cell that also spans
+         * multiple columns gets an approximation, not a broken width.
+         */
+        'TH'    => '<th><xsl:copy-of select="@colspan"/><xsl:copy-of select="@rowspan"/><xsl:if test="@align or (@colwidth and @colwidth!=&apos;0&apos;)"><xsl:attribute name="style"><xsl:if test="@align">text-align:<xsl:value-of select="@align"/>;</xsl:if><xsl:if test="@colwidth and @colwidth!=&apos;0&apos;">width:<xsl:choose><xsl:when test="contains(@colwidth,&apos;,&apos;)"><xsl:value-of select="substring-before(@colwidth,&apos;,&apos;)"/></xsl:when><xsl:otherwise><xsl:value-of select="@colwidth"/></xsl:otherwise></xsl:choose>px;</xsl:if></xsl:attribute></xsl:if><xsl:apply-templates/></th>',
+        'TD'    => '<td><xsl:copy-of select="@colspan"/><xsl:copy-of select="@rowspan"/><xsl:if test="@align or (@colwidth and @colwidth!=&apos;0&apos;)"><xsl:attribute name="style"><xsl:if test="@align">text-align:<xsl:value-of select="@align"/>;</xsl:if><xsl:if test="@colwidth and @colwidth!=&apos;0&apos;">width:<xsl:choose><xsl:when test="contains(@colwidth,&apos;,&apos;)"><xsl:value-of select="substring-before(@colwidth,&apos;,&apos;)"/></xsl:when><xsl:otherwise><xsl:value-of select="@colwidth"/></xsl:otherwise></xsl:choose>px;</xsl:if></xsl:attribute></xsl:if><xsl:apply-templates/></td>',
         /*
          * 🚨 The colour lives in an attribute filtered by s9e's #color, never in
          * a style string we assemble from user input. A span whose style we
@@ -186,6 +197,16 @@ abstract class Vocabulary
          * reply just landed in — no server round trip, no reload.
          */
         'SCRIBEREPLY' => '<div class="Scribe-replyGate"><p class="Scribe-replyGateLocked">Bu içeriği görmek için yorum yapmalısın.</p><div class="Scribe-replyGateBody"><xsl:apply-templates/></div></div>',
+        /*
+         * 🚨 `align` on the image ITSELF doesn't work: `IMG` is a tag
+         * `flarum/bbcode` claims when enabled (registerTags skips it,
+         * exactly like the SPOILER/INFO collision earlier), so an attribute
+         * added to Scribe's own copy of IMG's definition never actually gets
+         * registered on the tag flarum/bbcode owns. A wrapper is a tag name
+         * nobody else has any reason to claim, so it sidesteps the
+         * collision instead of trying to extend a foreign tag.
+         */
+        'SCRIBEIMGALIGN' => '<figure class="Scribe-imgAlign"><xsl:if test="@align"><xsl:attribute name="data-align"><xsl:value-of select="@align"/></xsl:attribute></xsl:if><xsl:apply-templates/></figure>',
     ];
 
     /**
@@ -199,8 +220,8 @@ abstract class Vocabulary
         'IMG'   => ['src' => '#url', 'alt' => '#simpletext', 'title' => '#simpletext'],
         'LIST'  => ['type' => '#simpletext', 'start' => '#uint'],
         'URL'   => ['url' => '#url', 'title' => '#simpletext'],
-        'TH'    => ['colspan' => '#uint', 'rowspan' => '#uint', 'align' => '#simpletext'],
-        'TD'    => ['colspan' => '#uint', 'rowspan' => '#uint', 'align' => '#simpletext'],
+        'TH'    => ['colspan' => '#uint', 'rowspan' => '#uint', 'align' => '#simpletext', 'colwidth' => '#simpletext'],
+        'TD'    => ['colspan' => '#uint', 'rowspan' => '#uint', 'align' => '#simpletext', 'colwidth' => '#simpletext'],
         'SPAN'  => ['color' => '#color'],
         /*
          * 🚨 Same interpolation shape as TH/TD's `align`: the value lands
@@ -225,6 +246,7 @@ abstract class Vocabulary
          */
         'SCRIBESPOILER' => ['label' => '#title'],
         'SCRIBEINFO'    => ['label' => '#title', 'font' => '#color', 'bg' => '#color', 'border' => '#color'],
+        'SCRIBEIMGALIGN' => ['align' => '#simpletext'],
     ];
 
     /**
