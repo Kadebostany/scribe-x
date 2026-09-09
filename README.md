@@ -96,7 +96,7 @@ with). Your existing posts will render exactly as before.
 ## Requirements
 
 - Flarum 2.0
-- PHP 8.2+
+- PHP 8.3+
 
 ## Licence
 
