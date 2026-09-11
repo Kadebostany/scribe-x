@@ -46,7 +46,25 @@ Markdown could not represent:
 
 - **Tables.** s9e's Litedown has no table syntax at all, so on a Markdown forum a
   table renders as a paragraph full of pipes.
-- **Text colour**, underline and highlight.
+- **Text colour, highlight and underline** — colour by swatch or hex.
+- **Superscript and subscript**, for footnote markers and formulae.
+- **Text alignment** — left, centre, right, justify.
+- **Image alignment and resizing.**
+- **Spoilers** — a titled block the reader clicks to open.
+- **Info boxes** — a titled callout for the thing people keep missing.
+- **Reply-to-view** — content that stays folded away until the reader has
+  replied to the discussion. **Read the caveat below before you use it.**
+
+### Reply-to-view is a nudge, not a lock
+
+The gated content is in the page. It is sent to every reader in the post's HTML,
+and the browser is what hides it — so anyone who opens the developer tools, reads
+the page source, or disables CSS can read it without replying.
+
+That makes it a fine way to encourage participation, and the wrong tool for
+anything you actually need withheld: no private information, nothing paid, no
+answer key. If a reader must not be able to see something, it cannot be in the
+post at all.
 
 ## Build your own toolbar
 

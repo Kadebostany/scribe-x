@@ -43,6 +43,12 @@ ernestdefoe-scribe:
       redo: Redo
 
   forum:
+    reply_gate:
+      # Shown in place of gated content until the reader has replied. Also
+      # compiled into the post HTML as the no-JavaScript fallback - see
+      # src/Formatter/Configure.php.
+      locked: You need to reply to this discussion before you can see this.
+
     composer:
       toolbar_label: Formatting
       apply: Apply
