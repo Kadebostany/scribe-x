@@ -3,6 +3,7 @@
 namespace ErnestDefoe\Scribe\Formatter;
 
 use s9e\TextFormatter\Configurator;
+use s9e\TextFormatter\Configurator\Items\AttributeFilters\RegexpFilter;
 
 /**
  * Teaches the formatter to read the HTML the editor produces, and to keep
@@ -72,10 +73,31 @@ class Configure
                 // The filter is the security boundary, not the template. An
                 // unfiltered value interpolated into a style or href is stored
                 // XSS; #color/#url/#uint reject the value outright instead.
-                $attr->filterChain->append($filter);
+                $attr->filterChain->append($this->resolveFilter($filter));
             }
 
             $tag->template = $template;
         }
+    }
+
+    /**
+     * `#title` isn't an s9e built-in — Spoiler/Info titles need Unicode
+     * letters (Turkish included) and emoji, both of which a narrow allow-list
+     * rejects outright. s9e's filter chain is all-or-nothing: one
+     * disallowed character fails the WHOLE attribute, not just that
+     * character, so an emoji-prefixed title didn't lose the emoji — it lost
+     * the entire title. Safe with a deny-list instead of an allow-list
+     * because the value is only ever placed via xsl:value-of into a text
+     * node (auto-escaped), never interpolated into an attribute or style —
+     * it doesn't need #simpletext's CSS-safety guarantee, just no control
+     * characters and a sane length cap.
+     */
+    private function resolveFilter(string $filter): string|RegexpFilter
+    {
+        if ($filter === '#title') {
+            return new RegexpFilter('/^[^\x00-\x1F\x7F]{1,80}$/Du');
+        }
+
+        return $filter;
     }
 }

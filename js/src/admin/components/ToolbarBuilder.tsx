@@ -151,14 +151,43 @@ export default class ToolbarBuilder extends Component<ToolbarBuilderAttrs> {
     );
   }
 
-  /** Which slot the pointer is nearest, so the chip lands where it looks like it will. */
+  /**
+   * Which slot the pointer is nearest, so the chip lands where it looks like
+   * it will.
+   *
+   * 🚨 Row-aware. The toolbar wraps onto a second line once it's full — an
+   * X-only comparison against every chip regardless of row always resolved
+   * to a first-row index, because the loop returns on the first chip whose
+   * *horizontal* midpoint the pointer hasn't reached yet, and a first-row
+   * chip's box can satisfy that check even while the pointer sits over row
+   * two. Group chips into rows by their `top` first, pick the row nearest
+   * the pointer's Y, then do the X comparison only within that row.
+   */
   indexFromPointer(e: DragEvent): number {
-    const row = (e.currentTarget as HTMLElement).querySelectorAll('.ScribeBuilder-chip');
-    for (let i = 0; i < row.length; i++) {
-      const r = row[i].getBoundingClientRect();
-      if (e.clientX < r.left + r.width / 2) return i;
+    const chips = Array.from(
+      (e.currentTarget as HTMLElement).querySelectorAll<HTMLElement>('.ScribeBuilder-chip')
+    );
+    if (!chips.length) return 0;
+
+    const rects = chips.map((el) => el.getBoundingClientRect());
+    const rows: number[][] = [];
+    rects.forEach((r, i) => {
+      const row = rows.find((row) => Math.abs(rects[row[0]].top - r.top) < 4);
+      if (row) row.push(i);
+      else rows.push([i]);
+    });
+
+    const targetRow = rows.reduce((best, row) => {
+      const center = (rects: DOMRect[], row: number[]) => rects[row[0]].top + rects[row[0]].height / 2;
+      return Math.abs(e.clientY - center(rects, row)) < Math.abs(e.clientY - center(rects, best))
+        ? row
+        : best;
+    }, rows[0]);
+
+    for (const i of targetRow) {
+      if (e.clientX < rects[i].left + rects[i].width / 2) return i;
     }
-    return this.keys.length;
+    return targetRow[targetRow.length - 1] + 1;
   }
 
   onDrop(e: DragEvent) {
