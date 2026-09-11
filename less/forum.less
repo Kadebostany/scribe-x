@@ -438,16 +438,36 @@
     border-radius: 6px;
   }
 
+  /*
+   * 🚨 Cell fills are derived from the TEXT colour, never hardcoded.
+   *
+   * These were both #e4eaf7 — a light blue-grey with no dark variant. The text
+   * colour follows the theme, so on any dark forum the result was near-white
+   * text on a near-white cell: rgb(243,246,249) on rgb(228,234,247), a contrast
+   * ratio of about 1.06:1. Not "hard to read" — invisible. Every Scribe site in
+   * dark mode had it, in every table ever posted.
+   *
+   * Mixing the text colour into the background gives a tint that inverts with
+   * the theme for free: a light wash on a light forum, a subtle lift on a dark
+   * one, and it tracks a custom text colour too. This is the same construction
+   * the editor's own table rule already used — the rendered-post copy simply
+   * never got it.
+   *
+   * The rgba line underneath is the fallback for browsers without color-mix;
+   * a neutral grey at low alpha reads correctly on either ground.
+   */
   /* A <th> outside <thead> is a row label, not a column header — bold, not
      a colour block, so it reads as part of the row instead of a banner. */
   tbody th {
     font-weight: 600;
     white-space: nowrap;
-    background: #e4eaf7;
+    background: rgba(128, 128, 128, 0.16);
+    background: color-mix(in srgb, var(--text-color, #222) 12%, transparent);
   }
 
   td {
-    background: #e4eaf7;
+    background: rgba(128, 128, 128, 0.09);
+    background: color-mix(in srgb, var(--text-color, #222) 7%, transparent);
   }
 }
 
