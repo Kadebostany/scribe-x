@@ -158,6 +158,32 @@ export default class ScribeEditorDriver implements EditorDriverInterface {
           }
           return false;
         },
+
+        /*
+         * 🚨 PASTING AN IMAGE PRODUCED TWO OF THEM.
+         *
+         * The clipboard carries an image in several forms at once: the file
+         * itself, and an HTML fragment pointing at wherever it came from. FoF
+         * Upload's listener takes the FILE, uploads it, and inserts the result
+         * when it finishes — while ProseMirror, meanwhile, has already pasted
+         * the HTML fragment. The poster gets the uploaded image and a second
+         * one hotlinked from a source that may well be private or expire.
+         * Reported by tennyy on Flarum 2.0.0-rc.8.
+         *
+         * Returning true here says "handled": ProseMirror inserts nothing and
+         * the upload arrives on its own a moment later, which is the behaviour
+         * everybody expects and the one the plain textarea always had.
+         *
+         * 🚨 Only when there is an uploader to hand it to. Swallowing the paste
+         * on a forum without FoF Upload would mean pasting an image does
+         * NOTHING — a worse bug than the one being fixed, and one that would
+         * look like Scribe ignoring the clipboard entirely.
+         */
+        handlePaste: (_view: unknown, event: ClipboardEvent) => {
+          if (!hasImageFile(event) || !anUploaderIsInstalled()) return false;
+
+          return true;
+        },
       },
     } as any);
 
@@ -277,4 +303,42 @@ export default class ScribeEditorDriver implements EditorDriverInterface {
     this.toolbarEl.remove();
     this.el.remove();
   }
+}
+
+/**
+ * Whether the clipboard carries an actual image FILE, as opposed to a copied
+ * <img> element or text that merely mentions one.
+ *
+ * 🚨 `kind === 'file'` rather than a type check alone. Copying an image inside
+ * a web page puts `image/png` on the clipboard as HTML, not as a file — and
+ * swallowing that would break the ordinary act of copying an image from one
+ * post into another, which no uploader handles because there is nothing to
+ * upload.
+ */
+function hasImageFile(event: ClipboardEvent): boolean {
+  const items = event.clipboardData?.items;
+
+  if (!items) return false;
+
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].kind === 'file' && items[i].type.startsWith('image/')) return true;
+  }
+
+  return false;
+}
+
+/**
+ * Whether something is listening for pasted files.
+ *
+ * 🚨 Resolved at RUNTIME through Flarum's own registry, never imported. Scribe
+ * must build and run identically whether or not FoF Upload is installed, and
+ * an import of a package that is not there takes the whole forum's JS bundle
+ * down with it.
+ */
+function anUploaderIsInstalled(): boolean {
+  const extensions = (globalThis as any)?.flarum?.extensions;
+
+  if (!extensions) return false;
+
+  return 'fof-upload' in extensions;
 }
