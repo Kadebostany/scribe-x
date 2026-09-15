@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "635175c2e745fd47ee7c309caae08239",
+    "content-hash": "4e0918f78d8a92628f152a1c9753be1c",
     "packages": [
         {
             "name": "asispts/http-accept",
