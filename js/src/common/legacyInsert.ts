@@ -22,6 +22,28 @@
 const IMAGE = /!\[([^\]]*)\]\(([^)\s]+)\)/g;
 const LINK = /\[([^\]]+)\]\(([^)\s]+)\)/g;
 
+/*
+ * 🚨 FoF Upload's OTHER format, and the reason a pasted image showed up as a
+ * line of raw text.
+ *
+ * FoF Upload has two insert modes. In Markdown mode it hands over
+ * `![alt](url)`, which IMAGE above already understands. In "image preview" mode
+ * — which is the default for images and what a paste produces — it hands over
+ *
+ *     [upl-image-preview url=https://… uuid=… thumbnail_url=…]
+ *
+ * That is not Markdown and never was, so it fell through to being inserted
+ * verbatim: the poster saw a bracketed line of attributes sitting in their
+ * post. Reported by tennyy on Flarum 2.0.0-rc.8 with Scribe 1.1.1.
+ *
+ * Attributes are unordered and the set differs by version, so this reads
+ * `url=` out of the tag rather than matching a fixed shape. `thumbnail_url` is
+ * deliberately not preferred: the thumbnail is a downscaled copy, and quietly
+ * substituting it would put a blurry image in a post whose author chose a
+ * sharp one.
+ */
+const UPL_PREVIEW = /\[upl-image-preview\s+([^\]]*)\]/g;
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')
@@ -37,8 +59,48 @@ function safeUrl(url: string): string | null {
   return /^https?:\/\//i.test(u) ? u : null;
 }
 
+/** Pull one attribute out of a BBCode-style attribute list. */
+function attribute(attrs: string, name: string): string | null {
+  const match = new RegExp(`(?:^|\\s)${name}=("[^"]*"|'[^']*'|[^\\s\\]]+)`, 'i').exec(attrs);
+
+  if (!match) return null;
+
+  return match[1].replace(/^["']|["']$/g, '');
+}
+
 function inline(text: string): string {
   let out = escapeHtml(text);
+
+  /*
+   * 🚨 Before IMAGE and LINK, because the tag's own attributes contain URLs
+   * and a `[…](…)` pattern could otherwise match across it. Replacing the
+   * whole tag first means the later passes never see its insides.
+   */
+  out = out.replace(UPL_PREVIEW, (whole, attrs) => {
+    /*
+     * 🚨 escapeHtml has ALREADY run on this text, so the attribute list
+     * arrives with its punctuation encoded: `&` is `&amp;` and `"` is
+     * `&quot;`. Both have to be put back before the attributes can be read.
+     *
+     * Undoing only `&amp;` was the first cut, and it silently broke every
+     * QUOTED value — `url="https://…/a b.png"` arrived as
+     * `url=&quot;https://…&quot;`, matched nothing, and the tag was left as
+     * raw text exactly as before the fix. Caught by a test, not by reading it.
+     */
+    const raw = String(attrs)
+      .replace(/&quot;/g, '"')
+      .replace(/&#0?39;|&apos;/g, "'")
+      .replace(/&amp;/g, '&');
+    const src = attribute(raw, 'url');
+    const safe = src ? safeUrl(src) : null;
+
+    if (!safe) return whole;
+
+    const alt = attribute(raw, 'alt') ?? '';
+
+    return `<img src="${escapeHtml(safe)}" alt="${escapeHtml(alt)}">`;
+  });
+
   out = out.replace(IMAGE, (whole, alt, src) => {
     const safe = safeUrl(src);
     return safe ? `<img src="${escapeHtml(safe)}" alt="${escapeHtml(alt)}">` : whole;
@@ -55,8 +117,9 @@ function inline(text: string): string {
  */
 export function toEditorContent(text: string): string | null {
   const hasQuote = /^\s*>\s?/m.test(text);
-  const hasMedia = IMAGE.test(text) || LINK.test(text);
-  IMAGE.lastIndex = LINK.lastIndex = 0; // these are /g — reset before reuse
+  const hasMedia = IMAGE.test(text) || LINK.test(text) || UPL_PREVIEW.test(text);
+  // these are /g — reset before reuse, or the next call starts mid-string
+  IMAGE.lastIndex = LINK.lastIndex = UPL_PREVIEW.lastIndex = 0;
   if (!hasQuote && !hasMedia) return null;
 
   const blocks: string[] = [];

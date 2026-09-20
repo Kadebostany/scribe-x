@@ -196,7 +196,20 @@ abstract class Vocabulary
          * the instant a reply posts because it reads the same store the
          * reply just landed in — no server round trip, no reload.
          */
-        'SCRIBEREPLY' => '<div class="Scribe-replyGate"><p class="Scribe-replyGateLocked">Bu içeriği görmek için yorum yapmalısın.</p><div class="Scribe-replyGateBody"><xsl:apply-templates/></div></div>',
+        /*
+         * The locked message is a TOKEN, not a sentence.
+         *
+         * An XSL template is compiled once and cannot call the translator, so
+         * whatever sits here is what every reader on every forum sees. This
+         * template arrived carrying a Turkish sentence, which would have gone
+         * out to every English forum that installed it.
+         *
+         * Configure swaps the token for the forum's default-locale string when
+         * the formatter is built, and replyGate.ts overwrites it again with the
+         * viewer's own translation on render. The baked-in default is what
+         * keeps the message sensible when JS never runs.
+         */
+        'SCRIBEREPLY' => '<div class="Scribe-replyGate"><p class="Scribe-replyGateLocked">%scribe.replyGateLocked%</p><div class="Scribe-replyGateBody"><xsl:apply-templates/></div></div>',
         /*
          * 🚨 `align` on the image ITSELF doesn't work: `IMG` is a tag
          * `flarum/bbcode` claims when enabled (registerTags skips it,

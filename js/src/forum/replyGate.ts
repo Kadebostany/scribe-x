@@ -1,4 +1,5 @@
 import app from 'flarum/forum/app';
+import extractText from 'flarum/common/utils/extractText';
 import type Mithril from 'mithril';
 
 declare const m: Mithril.Static;
@@ -65,5 +66,20 @@ export function applyReplyGates(element: HTMLElement, post: any): void {
   const discussion = post.discussion();
   const unlocked = post.user() === app.session.user || (discussion && hasReplied(discussion.id()));
 
-  gates.forEach((gate) => gate.classList.toggle('is-unlocked', unlocked === true));
+  // The locked message is compiled into the post HTML in the forum's DEFAULT
+  // locale - an XSL template cannot ask the translator anything, and the render
+  // is cached for everyone. Rewriting it here is what gets each reader the
+  // message in their OWN language. Configure::resolveTokens leaves a sensible
+  // sentence there for the case where this never runs.
+  const label = extractText(app.translator.trans('ernestdefoe-scribe.forum.reply_gate.locked'));
+
+  gates.forEach((gate) => {
+    const locked = gate.querySelector<HTMLElement>('.Scribe-replyGateLocked');
+
+    if (locked && label && locked.textContent !== label) {
+      locked.textContent = label;
+    }
+
+    gate.classList.toggle('is-unlocked', unlocked === true);
+  });
 }

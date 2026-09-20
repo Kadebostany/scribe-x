@@ -2,6 +2,7 @@
 
 namespace ErnestDefoe\Scribe\Formatter;
 
+use Flarum\Locale\TranslatorInterface;
 use s9e\TextFormatter\Configurator;
 use s9e\TextFormatter\Configurator\Items\AttributeFilters\RegexpFilter;
 
@@ -16,10 +17,13 @@ use s9e\TextFormatter\Configurator\Items\AttributeFilters\RegexpFilter;
  */
 class Configure
 {
+    /** Used when the translator is unreachable or has nothing for the key. */
+    private const LOCKED_FALLBACK = 'You need to reply to this discussion before you can see this.';
+
     public function __invoke(Configurator $config): void
     {
         $this->registerTags($config, Vocabulary::TEMPLATES, Vocabulary::ATTRIBUTES);
-        $this->registerTags($config, Vocabulary::EXTRA_TEMPLATES, Vocabulary::ATTRIBUTES);
+        $this->registerTags($config, $this->resolveTokens(Vocabulary::EXTRA_TEMPLATES), Vocabulary::ATTRIBUTES);
 
         $plugin = $config->plugins->load('HTMLElements');
 
@@ -46,6 +50,60 @@ class Configure
         foreach (Vocabulary::PASSTHROUGH as $element) {
             $plugin->allowElement($element);
         }
+    }
+
+    /**
+     * Fill in the strings a compiled XSL template cannot ask for itself.
+     *
+     * Resolved against the forum's DEFAULT locale, because the formatter is
+     * compiled once and cached for everyone - there is no viewer at this point
+     * to have a language. The frontend replaces it per viewer where it can; see
+     * js/src/forum/replyGate.ts.
+     *
+     * Escaped as XML because the result is spliced into a template, and a
+     * translator who writes an apostrophe or an ampersand must not be able to
+     * produce one that fails to compile.
+     */
+    private function resolveTokens(array $templates): array
+    {
+        $replacements = [
+            '%scribe.replyGateLocked%' => $this->xml(
+                $this->translate('ernestdefoe-scribe.forum.reply_gate.locked', self::LOCKED_FALLBACK)
+            ),
+        ];
+
+        foreach ($templates as $name => $template) {
+            $templates[$name] = strtr($template, $replacements);
+        }
+
+        return $templates;
+    }
+
+    /**
+     * A translation, or the English default if the translator cannot be reached.
+     *
+     * 🚨 This runs while the formatter is being COMPILED, which happens inside
+     * a cache miss on an ordinary page render. An exception escaping here does
+     * not degrade one feature - it takes down every page that renders a post.
+     * A missing translator is not worth that, so it falls back.
+     */
+    private function translate(string $key, string $fallback): string
+    {
+        try {
+            $translated = resolve(TranslatorInterface::class)->trans($key);
+        } catch (\Throwable $e) {
+            return $fallback;
+        }
+
+        // Flarum hands back the key itself when nothing is registered for it,
+        // which would put "ernestdefoe-scribe.forum..." in front of readers.
+        return ($translated === '' || $translated === $key) ? $fallback : $translated;
+    }
+
+    /** Safe to splice into an XSL template, whatever the translator wrote. */
+    private function xml(string $value): string
+    {
+        return htmlspecialchars($value, ENT_QUOTES | ENT_XML1, 'UTF-8');
     }
 
     /**
