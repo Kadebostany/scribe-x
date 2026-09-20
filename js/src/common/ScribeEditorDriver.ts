@@ -113,7 +113,16 @@ export default class ScribeEditorDriver implements EditorDriverInterface {
         // Serialise on change only. getHTML() walks the whole document, so
         // calling it from the input listeners as well makes every keypress
         // cost O(document).
-        this.params.oninput(this.editor!.getHTML());
+        //
+        // 🚨 Undo TipTap's `&` → `&amp;` text-node encoding before it leaves the
+        // browser. The backend's HTMLElements plugin (s9e) only recognises tag
+        // delimiters — it decodes entities in ATTRIBUTE values but leaves plain
+        // text untouched — then re-escapes that same text as XML-safe on the way
+        // to storage. Fed an already-encoded "&amp;", that re-escape doubles it
+        // to "&amp;amp;", which is what actually renders on the post. Undoing
+        // only `&amp;` is safe: unlike `&lt;`/`&gt;`, a bare `&` cannot be
+        // mistaken for a tag delimiter by the plugin's regexp tag matcher.
+        this.params.oninput(this.editor!.getHTML().replace(/&amp;/g, '&'));
 
         /*
          * 🚨 Fire a native `input` event, because a textarea would have.
