@@ -13,6 +13,15 @@ import {
   MAX_TABLE_SIZE,
   type ScribeButton,
 } from '../toolbarButtons';
+import { registeredButtons } from '../registry';
+
+/**
+ * A registered button carries its own full translation key; Scribe's own
+ * carry a suffix under Scribe's namespace.
+ */
+function buttonLabel(b: ScribeButton): string {
+  return app.translator.trans(b.translationKey ?? `ernestdefoe-scribe.lib.buttons.${b.label}`) as string;
+}
 
 export interface ScribeToolbarAttrs extends ComponentAttrs {
   editor?: Editor;
@@ -81,7 +90,18 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
     const editor = this.attrs.editor;
     if (!editor) return null;
 
-    const configured = app.forum.attribute<string[] | null>('scribeToolbar') ?? DEFAULT_TOOLBAR;
+    /*
+     * An admin who has never touched the setting gets the defaults PLUS
+     * whatever other extensions have registered.
+     *
+     * 🚨 Only on the default path. Once the toolbar has been arranged by hand
+     * that arrangement is an explicit decision, and an extension installed
+     * later must not silently push a button into it. The admin finds it in the
+     * builder's palette instead — which is why anything registering a button
+     * still has to work without it (see common/registry.ts).
+     */
+    const saved = app.forum.attribute<string[] | null>('scribeToolbar');
+    const configured = saved ?? [...DEFAULT_TOOLBAR, ...registeredButtons().map((b) => b.key)];
 
     return (
       <div className="Scribe-toolbarWrap">
@@ -98,7 +118,7 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
   }
 
   button(b: ScribeButton, editor: Editor) {
-    const label = app.translator.trans(`ernestdefoe-scribe.lib.buttons.${b.label}`);
+    const label = buttonLabel(b);
     const active = b.active?.(editor) ?? false;
 
     return (
@@ -135,7 +155,7 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
    * when its own toolbar button is toggled again (see `openPrompt`).
    */
   menuItem(b: ScribeButton, editor: Editor) {
-    const label = app.translator.trans(`ernestdefoe-scribe.lib.buttons.${b.label}`);
+    const label = buttonLabel(b);
     const active = b.active?.(editor) ?? false;
 
     return (

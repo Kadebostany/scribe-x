@@ -1,7 +1,7 @@
 import type Mithril from 'mithril';
 import type { Editor } from '@tiptap/core';
 import ScribeToolbar from './components/ScribeToolbar';
-import { SCRIBE_BUTTONS, TABLE_ACTIONS } from './toolbarButtons';
+import { allButtons, TABLE_ACTIONS } from './toolbarButtons';
 import { toEditorContent } from './legacyInsert';
 import type EditorDriverInterface from 'flarum/common/utils/EditorDriverInterface';
 import type { EditorDriverParams } from 'flarum/common/utils/EditorDriverInterface';
@@ -232,7 +232,7 @@ export default class ScribeEditorDriver implements EditorDriverInterface {
   private syncToolbar(): void {
     if (!this.editor) return;
     let signature = '';
-    for (const b of SCRIBE_BUTTONS) {
+    for (const b of allButtons()) {
       if (b.active?.(this.editor)) signature += b.key + ',';
     }
     /*
