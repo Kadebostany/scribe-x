@@ -285,6 +285,31 @@ export const ScribeAlign = Extension.create({
   },
 });
 
+/**
+ * Ctrl/⌘+K: the standard "insert link" key in every editor people already use.
+ * TipTap's Link extension binds no key, so this asks the toolbar to open its
+ * link form (it registers the opener in storage when it renders). Handled, so
+ * the browser's own Ctrl+K (focus the address bar) does not fire.
+ */
+const ScribeLinkShortcut = Extension.create({
+  name: 'scribeLinkShortcut',
+
+  addStorage() {
+    return { open: null as null | (() => void) };
+  },
+
+  addKeyboardShortcuts() {
+    return {
+      'Mod-k': () => {
+        const open = (this.storage as any).open;
+        if (typeof open !== 'function') return false;
+        open();
+        return true;
+      },
+    };
+  },
+});
+
 export function buildExtensions(placeholder: string) {
   return [
     Document,
@@ -319,6 +344,7 @@ export function buildExtensions(placeholder: string) {
     HardBreak,
     HorizontalRule,
     Link.configure({ openOnClick: false, autolink: true }),
+    ScribeLinkShortcut,
     /*
      * 🚨 `resize` is TipTap's own built-in — the corner-drag handles, the
      * live nodeView while dragging, committing `width`/`height` onto the

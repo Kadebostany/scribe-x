@@ -21,6 +21,32 @@ function buttonLabel(b: ScribeButton): string {
   return app.translator.trans(b.translationKey ?? `ernestdefoe-scribe.lib.buttons.${b.label}`) as string;
 }
 
+/**
+ * A TipTap shortcut ("Mod-Shift-b") the way the reader's own keyboard writes
+ * it: "⌘⇧B" on a Mac, "Ctrl+Shift+B" everywhere else.
+ */
+const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+
+export function formatShortcut(shortcut: string): string {
+  const parts = shortcut.split('-');
+  const key = parts.pop()!;
+  const keyLabel = key.length === 1 ? key.toUpperCase() : key;
+
+  if (IS_MAC) {
+    const symbols: Record<string, string> = { Mod: '⌘', Ctrl: '⌃', Alt: '⌥', Shift: '⇧' };
+    return parts.map((p) => symbols[p] ?? p).join('') + keyLabel;
+  }
+
+  const names: Record<string, string> = { Mod: 'Ctrl', Ctrl: 'Ctrl', Alt: 'Alt', Shift: 'Shift' };
+  return [...parts.map((p) => names[p] ?? p), keyLabel].join('+');
+}
+
+/** The tooltip: the button's name, then its shortcut when it has one. */
+function tooltipText(b: ScribeButton): string {
+  const label = buttonLabel(b);
+  return b.shortcut ? `${label} (${formatShortcut(b.shortcut)})` : label;
+}
+
 export interface ScribeToolbarAttrs extends ComponentAttrs {
   editor?: Editor;
   /** The driver re-renders us; we are not in Flarum's redraw cycle. */
@@ -98,6 +124,17 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
      * builder's palette instead — which is why anything registering a button
      * still has to work without it (see common/registry.ts).
      */
+    // Ctrl/⌘+K, bound in the editor (see ScribeLinkShortcut), opens the same
+    // link form as the button. The toolbar owns that form, so it hands the
+    // editor a way in.
+    const storage = (editor.storage as any).scribeLinkShortcut;
+    if (storage) {
+      storage.open = () => {
+        this.openPrompt('link', editor);
+        this.attrs.onChange();
+      };
+    }
+
     const saved = app.forum.attribute<string[] | null>('scribeToolbar');
     const configured = saved ?? [...DEFAULT_TOOLBAR, ...registeredButtons().map((b) => b.key)];
 
@@ -120,7 +157,7 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
     const active = b.active?.(editor) ?? false;
 
     return (
-      <Tooltip text={label}>
+      <Tooltip text={tooltipText(b)}>
         {Button.component({
           className:
             'Button Button--icon Button--link Scribe-toolbarButton' + (active ? ' is-active' : ''),
@@ -129,6 +166,8 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
           // inside bold text, which sighted users read off the highlight.
           'aria-pressed': active ? 'true' : 'false',
           'aria-label': label,
+          // Screen readers announce the shortcut the tooltip shows.
+          'aria-keyshortcuts': b.shortcut ? b.shortcut.replace('Mod', IS_MAC ? 'Meta' : 'Control').replace(/-/g, '+') : undefined,
           'data-badge': b.badge,
           disabled: b.enabled ? !b.enabled(editor) : false,
           onclick: () => {
@@ -157,12 +196,14 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
     const active = b.active?.(editor) ?? false;
 
     return (
-      <Tooltip text={label}>
+      <Tooltip text={tooltipText(b)}>
         {Button.component({
           className: 'Button Button--icon Button--link Scribe-toolbarButton' + (active ? ' is-active' : ''),
           icon: b.icon,
           'aria-pressed': active ? 'true' : 'false',
           'aria-label': label,
+          // Screen readers announce the shortcut the tooltip shows.
+          'aria-keyshortcuts': b.shortcut ? b.shortcut.replace('Mod', IS_MAC ? 'Meta' : 'Control').replace(/-/g, '+') : undefined,
           'data-badge': b.badge,
           disabled: b.enabled ? !b.enabled(editor) : false,
           onclick: () => {

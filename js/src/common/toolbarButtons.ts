@@ -38,6 +38,13 @@ export interface ScribeButton {
    * different things — the tooltip was the only way to tell them apart.
    */
   badge?: string;
+  /**
+   * The keyboard shortcut, in TipTap's notation ("Mod-Shift-b"), shown in the
+   * tooltip. 🚨 Only shortcuts the loaded extensions REALLY bind — each was
+   * read from the extension's own keymap — because a tooltip that promises a
+   * key that does nothing is the decorative-control trap in another form.
+   */
+  shortcut?: string;
 }
 
 /**
@@ -49,45 +56,45 @@ export interface ScribeButton {
  * so adding a key to the registry is the same act as making it work.
  */
 export const SCRIBE_BUTTONS: ScribeButton[] = [
-  { key: 'bold', icon: 'fas fa-bold', label: 'bold',
+  { key: 'bold', shortcut: 'Mod-b', icon: 'fas fa-bold', label: 'bold',
     active: (e) => e.isActive('bold'), run: (e) => e.chain().focus().toggleBold().run() },
-  { key: 'italic', icon: 'fas fa-italic', label: 'italic',
+  { key: 'italic', shortcut: 'Mod-i', icon: 'fas fa-italic', label: 'italic',
     active: (e) => e.isActive('italic'), run: (e) => e.chain().focus().toggleItalic().run() },
-  { key: 'underline', icon: 'fas fa-underline', label: 'underline',
+  { key: 'underline', shortcut: 'Mod-u', icon: 'fas fa-underline', label: 'underline',
     active: (e) => e.isActive('underline'), run: (e) => e.chain().focus().toggleUnderline().run() },
-  { key: 'strike', icon: 'fas fa-strikethrough', label: 'strike',
+  { key: 'strike', shortcut: 'Mod-Shift-s', icon: 'fas fa-strikethrough', label: 'strike',
     active: (e) => e.isActive('strike'), run: (e) => e.chain().focus().toggleStrike().run() },
-  { key: 'code', icon: 'fas fa-code', label: 'code',
+  { key: 'code', shortcut: 'Mod-e', icon: 'fas fa-code', label: 'code',
     active: (e) => e.isActive('code'), run: (e) => e.chain().focus().toggleCode().run() },
-  { key: 'superscript', icon: 'fas fa-superscript', label: 'superscript',
+  { key: 'superscript', shortcut: 'Mod-.', icon: 'fas fa-superscript', label: 'superscript',
     active: (e) => e.isActive('superscript'), run: (e) => e.chain().focus().toggleSuperscript().run() },
-  { key: 'subscript', icon: 'fas fa-subscript', label: 'subscript',
+  { key: 'subscript', shortcut: 'Mod-,', icon: 'fas fa-subscript', label: 'subscript',
     active: (e) => e.isActive('subscript'), run: (e) => e.chain().focus().toggleSubscript().run() },
   { key: 'color', icon: 'fas fa-palette', label: 'text_color', prompt: 'color',
     active: (e) => e.isActive('scribeColor') },
   { key: 'highlight', icon: 'fas fa-highlighter', label: 'highlight', prompt: 'highlight',
     active: (e) => e.isActive('highlight') },
-  { key: 'heading1', icon: 'fas fa-heading', label: 'heading1', badge: '1',
+  { key: 'heading1', shortcut: 'Mod-Alt-1', icon: 'fas fa-heading', label: 'heading1', badge: '1',
     active: (e) => e.isActive('heading', { level: 1 }),
     run: (e) => e.chain().focus().toggleHeading({ level: 1 }).run() },
-  { key: 'heading2', icon: 'fas fa-heading', label: 'heading', badge: '2',
+  { key: 'heading2', shortcut: 'Mod-Alt-2', icon: 'fas fa-heading', label: 'heading', badge: '2',
     active: (e) => e.isActive('heading', { level: 2 }),
     run: (e) => e.chain().focus().toggleHeading({ level: 2 }).run() },
-  { key: 'heading3', icon: 'fas fa-heading', label: 'subheading', badge: '3',
+  { key: 'heading3', shortcut: 'Mod-Alt-3', icon: 'fas fa-heading', label: 'subheading', badge: '3',
     active: (e) => e.isActive('heading', { level: 3 }),
     run: (e) => e.chain().focus().toggleHeading({ level: 3 }).run() },
-  { key: 'heading4', icon: 'fas fa-heading', label: 'heading4', badge: '4',
+  { key: 'heading4', shortcut: 'Mod-Alt-4', icon: 'fas fa-heading', label: 'heading4', badge: '4',
     active: (e) => e.isActive('heading', { level: 4 }),
     run: (e) => e.chain().focus().toggleHeading({ level: 4 }).run() },
-  { key: 'bulletList', icon: 'fas fa-list-ul', label: 'bullet_list',
+  { key: 'bulletList', shortcut: 'Mod-Shift-8', icon: 'fas fa-list-ul', label: 'bullet_list',
     active: (e) => e.isActive('bulletList'), run: (e) => e.chain().focus().toggleBulletList().run() },
-  { key: 'orderedList', icon: 'fas fa-list-ol', label: 'ordered_list',
+  { key: 'orderedList', shortcut: 'Mod-Shift-7', icon: 'fas fa-list-ol', label: 'ordered_list',
     active: (e) => e.isActive('orderedList'), run: (e) => e.chain().focus().toggleOrderedList().run() },
-  { key: 'blockquote', icon: 'fas fa-quote-left', label: 'quote',
+  { key: 'blockquote', shortcut: 'Mod-Shift-b', icon: 'fas fa-quote-left', label: 'quote',
     active: (e) => e.isActive('blockquote'), run: (e) => e.chain().focus().toggleBlockquote().run() },
   { key: 'align', icon: 'fas fa-align-left', label: 'align', prompt: 'alignMenu',
     active: (e) => isAlign(e, 'left') || isAlign(e, 'center') || isAlign(e, 'right') || isAlign(e, 'justify') },
-  { key: 'codeBlock', icon: 'fas fa-file-code', label: 'code_block',
+  { key: 'codeBlock', shortcut: 'Mod-Alt-c', icon: 'fas fa-file-code', label: 'code_block',
     active: (e) => e.isActive('codeBlock'), run: (e) => e.chain().focus().toggleCodeBlock().run() },
   { key: 'spoiler', icon: 'fas fa-eye-slash', label: 'spoiler', prompt: 'spoiler',
     active: (e) => e.isActive('scribeSpoiler') },
@@ -95,15 +102,15 @@ export const SCRIBE_BUTTONS: ScribeButton[] = [
     active: (e) => e.isActive('scribeInfo') },
   { key: 'replyGate', icon: 'fas fa-lock', label: 'reply_gate',
     active: (e) => e.isActive('scribeReply'), run: (e) => e.chain().focus().wrapIn('scribeReply').run() },
-  { key: 'link', icon: 'fas fa-link', label: 'link', prompt: 'link',
+  { key: 'link', shortcut: 'Mod-k', icon: 'fas fa-link', label: 'link', prompt: 'link',
     active: (e) => e.isActive('link') },
   { key: 'image', icon: 'fas fa-image', label: 'image', prompt: 'image' },
   { key: 'table', icon: 'fas fa-table', label: 'table', prompt: 'tableMenu' },
   { key: 'horizontalRule', icon: 'fas fa-minus', label: 'horizontal_rule',
     run: (e) => e.chain().focus().setHorizontalRule().run() },
-  { key: 'undo', icon: 'fas fa-undo', label: 'undo',
+  { key: 'undo', shortcut: 'Mod-z', icon: 'fas fa-undo', label: 'undo',
     enabled: (e) => e.can().undo(), run: (e) => e.chain().focus().undo().run() },
-  { key: 'redo', icon: 'fas fa-redo', label: 'redo',
+  { key: 'redo', shortcut: 'Mod-Shift-z', icon: 'fas fa-redo', label: 'redo',
     enabled: (e) => e.can().redo(), run: (e) => e.chain().focus().redo().run() },
 ];
 

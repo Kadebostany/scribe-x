@@ -6,6 +6,25 @@ stack.
 Every entry links to its full release notes, which carry the reasoning and, for
 the bugs, what actually went wrong.
 
+## [1.3.0] — 2026-10-03
+
+**Keyboard shortcuts you can find.** The editor already answered to most of the
+usual shortcuts, but nothing said so, and the most-used one, Ctrl+K for a link,
+did nothing at all. Requested on discuss.flarum.org: *Shortcuts for all the
+available tools of the text editor?*
+
+### Added
+
+- **Ctrl+K (⌘K) opens the link box**, the same as the link button, with the
+  cursor already in it. Handled by the editor, so the browser's own Ctrl+K
+  (focus the address bar) no longer fires while you type.
+- **Every toolbar tooltip shows its shortcut**, in the reader's own keyboard's
+  terms: "Bold (Ctrl+B)" on Windows and Linux, "Bold (⌘B)" on a Mac. Screen
+  readers get the same through `aria-keyshortcuts`.
+- Only shortcuts the editor really binds are shown. Each was read from its
+  extension's own keymap. Highlight's key is left off its button, because the
+  button opens a colour picker and the key applies plain yellow.
+
 ## [1.2.0] — 2026-09-23
 
 **Other extensions can now add to the editor.** Scribe's node list and its

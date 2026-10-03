@@ -77,6 +77,25 @@ a keyboard shortcut.
 Keyboard users get the same control: Enter adds a feature, arrow keys move it,
 Delete removes it.
 
+## Keyboard shortcuts
+
+Every toolbar button that has a shortcut shows it in its tooltip ("Bold (Ctrl+B)", or "⌘B" on a Mac), so nobody has to go looking for them. Ctrl is ⌘ on a Mac.
+
+| Action | Shortcut |
+|---|---|
+| Bold, italic, underline | Ctrl+B, Ctrl+I, Ctrl+U |
+| Strikethrough | Ctrl+Shift+S |
+| Inline code | Ctrl+E |
+| Superscript, subscript | Ctrl+. , Ctrl+, |
+| Heading 1 to 4 | Ctrl+Alt+1 to 4 |
+| Bulleted list, numbered list | Ctrl+Shift+8, Ctrl+Shift+7 |
+| Quote | Ctrl+Shift+B |
+| Code block | Ctrl+Alt+C |
+| **Link** | **Ctrl+K**: opens the link box, the same as the button |
+| Undo, redo | Ctrl+Z, Ctrl+Shift+Z |
+
+Select some text and paste a URL to turn it into a link without any shortcut at all.
+
 ## Performance
 
 TipTap and ProseMirror are about 430KB. Bundling that into `forum.js` means every
