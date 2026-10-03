@@ -145,7 +145,8 @@ abstract class Vocabulary
         'TABLE' => '<div class="Scribe-tableWrap"><table><xsl:apply-templates/></table></div>',
         'THEAD' => '<thead><xsl:apply-templates/></thead>',
         'TBODY' => '<tbody><xsl:apply-templates/></tbody>',
-        'TR'    => '<tr><xsl:apply-templates/></tr>',
+        /* `rowheight` is #uint, so it can only ever interpolate digits. */
+        'TR'    => '<tr><xsl:if test="@rowheight and @rowheight!=&apos;0&apos;"><xsl:attribute name="style">height:<xsl:value-of select="@rowheight"/>px</xsl:attribute></xsl:if><xsl:apply-templates/></tr>',
         /*
          * 🚨 `colwidth` is @tiptap/extension-table's own column-drag output
          * (a comma list, one width per spanned column — see its
@@ -233,6 +234,7 @@ abstract class Vocabulary
         'IMG'   => ['src' => '#url', 'alt' => '#simpletext', 'title' => '#simpletext'],
         'LIST'  => ['type' => '#simpletext', 'start' => '#uint'],
         'URL'   => ['url' => '#url', 'title' => '#simpletext'],
+        'TR'    => ['rowheight' => '#uint'],
         'TH'    => ['colspan' => '#uint', 'rowspan' => '#uint', 'align' => '#simpletext', 'colwidth' => '#simpletext'],
         'TD'    => ['colspan' => '#uint', 'rowspan' => '#uint', 'align' => '#simpletext', 'colwidth' => '#simpletext'],
         'SPAN'  => ['color' => '#color'],
@@ -281,5 +283,6 @@ abstract class Vocabulary
         'font'   => 'data-font',
         'bg'     => 'data-bg',
         'border' => 'data-border',
+        'rowheight' => 'data-row-height',
     ];
 }

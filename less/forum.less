@@ -87,6 +87,8 @@
   flex: 0 0 56px;
   text-align: center;
 }
+/* Row height / column width in the table menu: room for "auto" and 4 digits. */
+.Scribe-sizeInput { width: 76px; flex-basis: 76px; }
 
 /* The native OS/browser colour picker, next to the free-form hex text field
    it stays in sync with — see ScribeToolbar.tsx's `toPickerHex`. */
@@ -344,6 +346,19 @@
       /* Cells need room to be a drop target, and a column can't be
          narrower than its own handle plus a little breathing room. */
       td, th { position: relative; min-width: 24px; }
+
+      /* 🚨 Dragging across cells makes a prosemirror-tables CellSelection,
+         which hides the native text highlight (`.ProseMirror-hideselection`)
+         and only tags each cell `.selectedCell` — tiptap ships no CSS for it,
+         so a multi-cell selection looked like no selection at all. */
+      .selectedCell::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: color-mix(in srgb, var(--primary-color, #3b82f6) 22%, transparent);
+        pointer-events: none;
+        z-index: 2;
+      }
     }
 
     /*
@@ -365,6 +380,14 @@
       z-index: 20;
     }
     &.resize-cursor { cursor: col-resize; }
+
+    /* Row resizing is Scribe's own (tiptap/tableSize.ts) — same blue bar as
+       the column handle above, along the row's bottom edge instead. */
+    &.row-resize-cursor { cursor: row-resize; }
+    tr.Scribe-rowResizeHover > td,
+    tr.Scribe-rowResizeHover > th {
+      box-shadow: inset 0 -3px 0 var(--primary-color, #3b82f6);
+    }
 
     /* The placeholder is a pseudo-element on the first empty paragraph, so it
        must not be selectable or read as content. */
@@ -417,6 +440,10 @@
     border-radius: 6px;
 
     p { margin: 0; }
+    /* An empty cell's <p></p> got the global `p:empty { min-height: 1em }`,
+       shorter than one line of text — so a row grew the moment any cell in
+       it had text. One line-height keeps every row the same. */
+    p:empty { min-height: 1lh; }
   }
 
   /*

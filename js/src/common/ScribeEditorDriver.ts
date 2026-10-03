@@ -1,7 +1,7 @@
 import type Mithril from 'mithril';
 import type { Editor } from '@tiptap/core';
 import ScribeToolbar from './components/ScribeToolbar';
-import { SCRIBE_BUTTONS } from './toolbarButtons';
+import { SCRIBE_BUTTONS, TABLE_ACTIONS } from './toolbarButtons';
 import { toEditorContent } from './legacyInsert';
 import type EditorDriverInterface from 'flarum/common/utils/EditorDriverInterface';
 import type { EditorDriverParams } from 'flarum/common/utils/EditorDriverInterface';
@@ -234,6 +234,16 @@ export default class ScribeEditorDriver implements EditorDriverInterface {
     let signature = '';
     for (const b of SCRIBE_BUTTONS) {
       if (b.active?.(this.editor)) signature += b.key + ',';
+    }
+    /*
+     * Inside a table, moving between cells changes nothing above but does
+     * change the row/column size fields and which table actions are enabled
+     * (merge/split) — so those join the signature, and only while in a table.
+     */
+    if (this.editor.isActive('table')) {
+      const size = (this.editor.storage as any).tableRow;
+      signature += `|${size?.rowHeight(this.editor.state)}x${size?.columnWidth(this.editor.state)}|`;
+      for (const b of TABLE_ACTIONS) signature += b.enabled?.(this.editor) ? '1' : '0';
     }
     if (signature !== this.activeSignature) {
       this.activeSignature = signature;

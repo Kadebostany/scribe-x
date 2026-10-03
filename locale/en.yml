@@ -38,6 +38,10 @@ ernestdefoe-scribe:
       delete_row: Delete row
       add_column: Add column
       delete_column: Delete column
+      merge_cells: Merge cells
+      split_cells: Split cells
+      row_height: Row height (px)
+      column_width: Column width (px)
       horizontal_rule: Divider
       undo: Undo
       redo: Redo

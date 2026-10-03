@@ -9,6 +9,8 @@ import {
   DEFAULT_TOOLBAR,
   ALIGN_ACTIONS,
   TABLE_ACTIONS,
+  MIN_TABLE_SIZE,
+  MAX_TABLE_SIZE,
   type ScribeButton,
 } from '../toolbarButtons';
 
@@ -154,6 +156,33 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
     );
   }
 
+  /**
+   * A px field for the row/column under the cursor. Empty = auto. Applies on
+   * `change` (Enter or leaving the field), not per keystroke, so typing "120"
+   * doesn't resize through 1 and 12 first.
+   */
+  sizeInput(labelKey: string, current: number | null, apply: (n: number | null) => void) {
+    const label = app.translator.trans(`ernestdefoe-scribe.lib.buttons.${labelKey}`) as string;
+
+    return (
+      <Tooltip text={label}>
+        <input
+          className="FormControl Scribe-promptInput Scribe-promptNumber Scribe-sizeInput"
+          type="number"
+          min={MIN_TABLE_SIZE}
+          max={MAX_TABLE_SIZE}
+          placeholder="auto"
+          aria-label={label}
+          value={current ?? ''}
+          onchange={(e: any) => {
+            apply(Number.isFinite(e.target.valueAsNumber) ? e.target.valueAsNumber : null);
+            this.attrs.onChange();
+          }}
+        />
+      </Tooltip>
+    );
+  }
+
   openPrompt(kind: NonNullable<ScribeButton['prompt']>, editor: Editor) {
     // Reopening the same prompt closes it, so the button toggles.
     this.prompt = this.prompt === kind ? null : kind;
@@ -273,11 +302,17 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
       // `prompt: 'table'`, so `this.button()` opens the size-picker below
       // exactly the way any other prompt button does — no special-casing.
       const insertTable: ScribeButton = { key: 'insertTable', icon: 'fas fa-table', label: 'table', prompt: 'table' };
+      // Getters live on the row extension's storage — see tiptap/tableSize.ts.
+      const size = (editor.storage as any).tableRow;
 
       return (
         <div className="Scribe-prompt Scribe-prompt--menu">
           {this.button(insertTable, editor)}
           {TABLE_ACTIONS.map((b) => this.menuItem(b, editor))}
+          {editor.isActive('table') && [
+            this.sizeInput('row_height', size.rowHeight(editor.state), (n) => editor.commands.setRowHeight(n)),
+            this.sizeInput('column_width', size.columnWidth(editor.state), (n) => editor.commands.setColumnWidth(n)),
+          ]}
         </div>
       );
     }

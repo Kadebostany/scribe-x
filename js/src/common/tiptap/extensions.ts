@@ -24,7 +24,8 @@ import Placeholder from '@tiptap/extension-placeholder';
 import Superscript from '@tiptap/extension-superscript';
 import Subscript from '@tiptap/extension-subscript';
 import { TextStyle } from '@tiptap/extension-text-style';
-import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table';
+import { Table, TableCell, TableHeader } from '@tiptap/extension-table';
+import { ScribeTableRow } from './tableSize';
 import { Extension, Mark, Node, mergeAttributes } from '@tiptap/core';
 
 /**
@@ -338,7 +339,7 @@ export function buildExtensions(placeholder: string) {
     ScribeInfo,
     ScribeReply,
     Table.configure({ resizable: true }),
-    TableRow,
+    ScribeTableRow,
     TableHeader,
     TableCell,
     Placeholder.configure({ placeholder }),

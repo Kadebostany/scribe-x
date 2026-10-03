@@ -1,0 +1,69 @@
+ernestdefoe-scribe:
+  lib:
+    buttons:
+      bold: Kalın
+      italic: İtalik
+      underline: Altı çizili
+      strike: Üstü çizili
+      code: Satır içi kod
+      superscript: Üst simge
+      subscript: Alt simge
+      text_color: Metin rengi
+      highlight: Vurgula
+      heading1: Başlık
+      heading: Ana başlık
+      subheading: Alt başlık
+      heading4: Küçük başlık
+      bullet_list: Madde işaretli liste
+      ordered_list: Numaralı liste
+      quote: Alıntı
+      align: Hizala
+      align_left: Sola hizala
+      align_center: Ortala
+      align_right: Sağa hizala
+      align_justify: İki yana yasla
+      spoiler: Spoiler
+      info_box: Bilgi kutusu
+      reply_gate: Görmek için yanıtla
+      code_block: Kod bloğu
+      link: Bağlantı
+      image: Görsel
+      table: Tablo
+      toggle_header_cell: Başlık hücresi aç/kapat
+      add_row: Satır ekle
+      delete_row: Satırı sil
+      add_column: Sütun ekle
+      delete_column: Sütunu sil
+      merge_cells: Hücreleri birleştir
+      split_cells: Hücreleri böl
+      row_height: Satır yüksekliği (px)
+      column_width: Sütun genişliği (px)
+      horizontal_rule: Ayırıcı çizgi
+      undo: Geri al
+      redo: Yinele
+
+  forum:
+    reply_gate:
+      locked: Bu içeriği görmek için konuya yanıt vermelisin.
+
+    composer:
+      toolbar_label: Biçimlendirme
+      apply: Uygula
+      remove_link: Bağlantıyı kaldır
+      clear_colour: Temizle
+      clear_highlight: Temizle
+      link_placeholder: Bağlantıyı yapıştır ya da yaz…
+      image_placeholder: Görsel adresi…
+      spoiler_title_placeholder: Spoiler başlığı…
+      info_title_placeholder: Başlık…
+
+  admin:
+    toolbar_label: Editör araç çubuğu
+    toolbar_help: >
+      Aşağıdaki paletten bir özelliği araç çubuğuna sürükle; sırayı değiştirmek
+      için araç çubuğu içinde sürükle. Klavye: eklemek için Enter, taşımak için
+      ok tuşları, kaldırmak için Delete.
+    palette_label: Kullanılabilir özellikler
+    toolbar_empty: Araç çubuğunu oluşturmak için özellikleri buraya sürükle.
+    palette_empty: Tüm özellikler zaten araç çubuğunda.
+    reset: Varsayılanlara sıfırla

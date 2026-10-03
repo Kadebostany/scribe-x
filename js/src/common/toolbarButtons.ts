@@ -1,5 +1,9 @@
 import type { Editor } from '@tiptap/core';
 
+/** Bounds (px) for a table row height or column width — drag and typed alike. */
+export const MIN_TABLE_SIZE = 20;
+export const MAX_TABLE_SIZE = 2000;
+
 /** scribeAlign is a global attribute, not a mark/node — check every host type. */
 function isAlign(e: Editor, align: string): boolean {
   return (
@@ -142,6 +146,10 @@ export const TABLE_ACTIONS: ScribeButton[] = [
     enabled: (e) => e.can().addColumnAfter(), run: (e) => e.chain().focus().addColumnAfter().run() },
   { key: 'deleteColumn', icon: 'fas fa-table-columns', label: 'delete_column', badge: '−',
     enabled: (e) => e.can().deleteColumn(), run: (e) => e.chain().focus().deleteColumn().run() },
+  { key: 'mergeCells', icon: 'fas fa-object-group', label: 'merge_cells',
+    enabled: (e) => e.can().mergeCells(), run: (e) => e.chain().focus().mergeCells().run() },
+  { key: 'splitCell', icon: 'fas fa-object-ungroup', label: 'split_cells',
+    enabled: (e) => e.can().splitCell(), run: (e) => e.chain().focus().splitCell().run() },
 ];
 
 export function buttonsFor(keys: string[]): ScribeButton[] {
