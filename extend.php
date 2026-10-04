@@ -8,6 +8,7 @@
 
 use Flarum\Extend;
 use Flarum\Extension\ExtensionManager;
+use ErnestDefoe\Scribe\Formatter\BareDiscordLinks;
 use ErnestDefoe\Scribe\Formatter\Configure;
 use ErnestDefoe\Scribe\Formatter\VideoEmbed;
 
@@ -65,7 +66,8 @@ return [
         ->css(__DIR__.'/less/admin.less'),
 
     (new Extend\Formatter)
-        ->configure(Configure::class),
+        ->configure(Configure::class)
+        ->parse(BareDiscordLinks::class),
 
     /*
      * Which buttons the toolbar shows, in order, as chosen in the AdminCP.
