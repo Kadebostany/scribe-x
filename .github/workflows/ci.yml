@@ -43,3 +43,9 @@ jobs:
 
       - name: Lint every PHP file
         run: find src extend.php -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      # 🚨 The video vocabulary is the security boundary for embeds: whatever
+      # reaches the API has to come out as a facade built from a validated id,
+      # or not as a video at all. vendor/ is committed, so no install step.
+      - name: Formatter tests
+        run: vendor/bin/phpunit

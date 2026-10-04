@@ -3,6 +3,7 @@ import Component from 'flarum/common/Component';
 import type { ComponentAttrs } from 'flarum/common/Component';
 import Button from 'flarum/common/components/Button';
 import Tooltip from 'flarum/common/components/Tooltip';
+import extractText from 'flarum/common/utils/extractText';
 import type { Editor } from '@tiptap/core';
 import {
   buttonsFor,
@@ -12,6 +13,8 @@ import {
   type ScribeButton,
 } from '../toolbarButtons';
 import { registeredButtons } from '../registry';
+import { insertVideo } from '../video/insert';
+import { anyVideoFromUrl, videoBrand, videoEmbedsEnabled, videoFromUrl, watchUrl } from '../video/providers';
 
 /**
  * A registered button carries its own full translation key; Scribe's own
@@ -85,6 +88,7 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
   prompt:
     | 'link'
     | 'image'
+    | 'video'
     | 'color'
     | 'highlight'
     | 'spoiler'
@@ -109,6 +113,8 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
    * out when reopening an existing info box for editing.
    */
   infoEmoji = '';
+  /** Why the video form refused the last link, shown under it. */
+  videoError = '';
 
   view() {
     const editor = this.attrs.editor;
@@ -135,6 +141,16 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
       };
     }
 
+    // The video node's own "Replace" button opens the video form, the same way.
+    const videoStorage = (editor.storage as any).scribeVideo;
+    if (videoStorage) {
+      videoStorage.open = () => {
+        this.prompt = null;
+        this.openPrompt('video', editor);
+        this.attrs.onChange();
+      };
+    }
+
     const saved = app.forum.attribute<string[] | null>('scribeToolbar');
     const configured = saved ?? [...DEFAULT_TOOLBAR, ...registeredButtons().map((b) => b.key)];
 
@@ -145,7 +161,10 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
           role="toolbar"
           aria-label={app.translator.trans('ernestdefoe-scribe.forum.composer.toolbar_label')}
         >
-          {buttonsFor(configured).map((b) => this.button(b, editor))}
+          {buttonsFor(configured)
+            // Embeds switched off in the AdminCP: no button that would make one.
+            .filter((b) => b.key !== 'video' || videoEmbedsEnabled())
+            .map((b) => this.button(b, editor))}
         </div>
         {this.prompt && this.promptRow(editor)}
       </div>
@@ -218,7 +237,12 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
   openPrompt(kind: NonNullable<ScribeButton['prompt']>, editor: Editor) {
     // Reopening the same prompt closes it, so the button toggles.
     this.prompt = this.prompt === kind ? null : kind;
+    this.videoError = '';
     if (kind === 'link') this.value = editor.getAttributes('link').href ?? '';
+    else if (kind === 'video') {
+      const attrs = editor.getAttributes('scribeVideo');
+      this.value = attrs.provider ? watchUrl(attrs as any) ?? '' : '';
+    }
     else if (kind === 'spoiler') this.value = editor.getAttributes('scribeSpoiler').label ?? '';
     else if (kind === 'info') {
       const attrs = editor.getAttributes('scribeInfo');
@@ -486,6 +510,8 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
       );
     }
 
+    if (kind === 'video') return this.videoPrompt(editor, close);
+
     const placeholder = app.translator.trans(
       `ernestdefoe-scribe.forum.composer.${kind === 'link' ? 'link_placeholder' : 'image_placeholder'}`
     );
@@ -537,6 +563,76 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
             },
             app.translator.trans('ernestdefoe-scribe.forum.composer.remove_link')
           )}
+      </div>
+    );
+  }
+
+  /**
+   * The Video button's form: paste a link, get an embed — or a reason why not.
+   *
+   * 🚨 It says WHY a link was refused. "Nothing happened" after pasting a link
+   * to a provider the admin switched off reads as Scribe being broken.
+   */
+  videoPrompt(editor: Editor, close: () => void) {
+    const apply = () => {
+      const url = this.value.trim();
+      if (!url) return close();
+
+      const ref = videoFromUrl(url);
+      if (!ref) {
+        const known = anyVideoFromUrl(url);
+        this.videoError = extractText(
+          app.translator.trans(
+            known ? 'ernestdefoe-scribe.forum.video.provider_off' : 'ernestdefoe-scribe.forum.video.unsupported',
+            known ? { provider: videoBrand(known.provider) } : {}
+          )
+        );
+        this.attrs.onChange();
+        return;
+      }
+
+      // Replacing a video keeps the caption its author already wrote.
+      const selected = (editor.state.selection as any).node;
+      const caption = selected?.type?.name === 'scribeVideo' ? selected.textContent : '';
+      insertVideo(editor, { ...ref, caption });
+      close();
+    };
+
+    return (
+      <div className="Scribe-prompt Scribe-prompt--video">
+        <input
+          className="FormControl Scribe-promptInput"
+          type="url"
+          placeholder={app.translator.trans('ernestdefoe-scribe.forum.video.placeholder') as string}
+          aria-label={app.translator.trans('ernestdefoe-scribe.lib.buttons.video') as string}
+          aria-invalid={this.videoError ? 'true' : undefined}
+          value={this.value}
+          oninput={(e: any) => {
+            this.value = e.target.value;
+            if (this.videoError) {
+              this.videoError = '';
+              this.attrs.onChange();
+            }
+          }}
+          onkeydown={(e: KeyboardEvent) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              apply();
+            } else if (e.key === 'Escape') {
+              close();
+            }
+          }}
+          oncreate={(v: any) => v.dom.focus()}
+        />
+        {Button.component(
+          { className: 'Button Button--primary Scribe-promptApply', onclick: apply },
+          app.translator.trans('ernestdefoe-scribe.forum.composer.apply')
+        )}
+        {this.videoError && (
+          <p className="Scribe-promptError" role="alert">
+            {this.videoError}
+          </p>
+        )}
       </div>
     );
   }

@@ -6,6 +6,43 @@ stack.
 Every entry links to its full release notes, which carry the reasoning and, for
 the bugs, what actually went wrong.
 
+## [Unreleased]
+
+**Video embeds.** Asked for by a user: *a way to either embed /
+auto embed YouTube vids would be amazing.* Widened to most of the video sites
+people actually link to.
+
+### Added
+
+- **Paste a video link on its own line and it becomes a video.** A link inside a
+  sentence stays a link. A **Video** toolbar button does the same from a form,
+  and says why when a link cannot be embedded.
+- **YouTube (and Shorts), Vimeo, Facebook videos and Reels, Instagram posts and
+  Reels, TikTok, ESPN, Twitch clips and videos, Streamable, Dailymotion and
+  Loom.** Vertical formats get a vertical box. Start times in the link are kept.
+- **Click to load.** A post shows a preview, and nothing from the video site
+  (no player, no script, no cookie) is loaded until the reader presses play.
+  YouTube plays from `youtube-nocookie.com`, Vimeo with `dnt=1`. With JavaScript
+  off the preview is a plain link to the video.
+- **Captions**, typed under the video in the composer. Replace, remove and drag
+  like any other block.
+- **AdminCP switches** for embeds as a whole and for each provider.
+
+### Security
+
+- A video is stored as a provider and an id, never a URL. The server checks the
+  pair against that provider's own id pattern, and every URL the reader's browser
+  is sent to is rebuilt from it. Hand-made embeds posted through the API, with
+  quotes, `javascript:`, foreign hosts or another provider's id, are dropped. 38
+  PHP tests cover the vocabulary and 87 JS tests the link recognition, including
+  lookalike hosts such as `youtube.com.evil.example` and `facebook.com@evil`.
+
+### Not embedded, on purpose
+
+`fb.watch`, `vm.tiktok.com` and `facebook.com/share/` links (redirects that would
+need a request to resolve), Rumble (its public links lack the player id), Kick
+and X/Twitter stay links.
+
 ## [1.3.0] — 2026-10-03
 
 **Keyboard shortcuts you can find.** The editor already answered to most of the

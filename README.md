@@ -54,6 +54,8 @@ Markdown could not represent:
 - **Info boxes** — a titled callout for the thing people keep missing.
 - **Reply-to-view** — content that stays folded away until the reader has
   replied to the discussion. **Read the caveat below before you use it.**
+- **Video embeds** — YouTube, Vimeo, TikTok, Facebook, Instagram, Twitch and
+  more, loaded only when the reader presses play. [Details below](#video-embeds).
 
 ### Reply-to-view is a nudge, not a lock
 
@@ -65,6 +67,91 @@ That makes it a fine way to encourage participation, and the wrong tool for
 anything you actually need withheld: no private information, nothing paid, no
 answer key. If a reader must not be able to see something, it cannot be in the
 post at all.
+
+## Video embeds
+
+Paste a video link on a line of its own and it becomes a video. Paste the same
+link in the middle of a sentence and it stays a link, because there you are
+citing it rather than showing it. The **Video** button in the toolbar does the
+same from a form, and tells you why when a link cannot be embedded.
+
+![A video in the composer, with its caption](screenshots/video-composer.png)
+
+In the composer the video shows the same preview readers will see, with a
+caption line under it, buttons to replace or remove it, and it drags like any
+other block. A start time in the link (`?t=1m30s`, `&t=90`, `#t=30s`) is kept.
+
+![Two embeds in a post: a YouTube video and a vertical TikTok](screenshots/video-post.png)
+
+### Nothing loads until the reader presses play
+
+A post shows a preview: the video's thumbnail where the provider publishes one
+without an API call (YouTube and Dailymotion), otherwise a neutral poster with
+the provider's mark. No player, no script and no cookie from the video site
+reaches the page until someone clicks. YouTube then plays from
+`youtube-nocookie.com`, and Vimeo with `dnt=1`. The thumbnail itself is an
+ordinary image request to the provider's image server.
+
+With JavaScript off, in a feed reader or in an email, the preview is simply a
+link to the video. Keyboard users get the same as everyone else: the preview is
+focusable, and Enter or Space plays it.
+
+### Supported
+
+| Provider | Links that embed | Shape |
+|---|---|---|
+| YouTube | `youtube.com/watch?v=`, `youtu.be/`, `/embed/`, `/live/`, `m.youtube.com` | 16:9 |
+| YouTube Shorts | `youtube.com/shorts/` | 9:16 |
+| Vimeo | `vimeo.com/123`, `player.vimeo.com/video/123` | 16:9 |
+| Facebook | `facebook.com/{page}/videos/{id}`, `facebook.com/watch/?v=` | 16:9 |
+| Facebook Reels | `facebook.com/reel/{id}` | 9:16 |
+| Instagram | `instagram.com/p/{code}` | 4:5 |
+| Instagram Reels | `instagram.com/reel/{code}` | 9:16 |
+| TikTok | `tiktok.com/@user/video/{id}` | 9:16 |
+| ESPN | `espn.com/video/clip?id=`, `espn.com/video/clip/_/id/{id}` | 16:9 |
+| Twitch | clips (`clips.twitch.tv/…`, `twitch.tv/{channel}/clip/…`) and videos (`twitch.tv/videos/{id}`) | 16:9 |
+| Streamable, Dailymotion, Loom | their share links | 16:9 |
+
+**These stay links:** `fb.watch`, `vm.tiktok.com` and `facebook.com/share/`
+links are redirects, and finding out where they go would mean a request to
+Facebook or TikTok every time someone pastes one. Rumble's public links do not
+contain the id its player needs, Kick has no stable embed for clips, and X/Twitter
+videos need X's own script on the page. Open the link and paste the address it
+lands on instead.
+
+### Switching it off
+
+The AdminCP has a switch for embeds as a whole and one per provider. Off, a
+pasted link stays a link, and videos already in posts open on the provider's
+site instead of playing in the page. Nothing in the stored posts changes, so
+turning it back on restores everything.
+
+![The video settings in the AdminCP](screenshots/video-admin.png)
+
+If you arranged your toolbar by hand before this version, the **Video** button
+is waiting in the toolbar builder's palette. Pasting works either way.
+
+### How it is kept safe
+
+A video is stored as a provider name and an id, never a URL. The server checks
+the id against that provider's own pattern before the post is saved (an
+11-character YouTube id, a numeric Vimeo id, and so on), and drops anything that
+fails. Every URL a reader's browser is sent to, from the link to the player, is
+rebuilt from that id. A post written through the API with a hand-made embed
+cannot get anything else into the page.
+
+### Links already in your posts
+
+Existing posts are not touched: a YouTube link posted before this version stays
+a link. To turn one into a video, edit the post, delete the link and paste it
+again on a line of its own.
+
+### Adding a provider
+
+Providers are one list, `resources/video-providers.json`, read by both the
+server and the editor. Each entry gives the id pattern, the link shapes that
+match, and the templates for the player, the page and the thumbnail. A provider
+added there is supported everywhere.
 
 ## Build your own toolbar
 
@@ -106,7 +193,7 @@ Scribe loads the editor in a separate chunk, on first use:
 
 | Asset | Size | When it loads |
 | --- | --- | --- |
-| `forum.js` | **10 KiB** | every page |
+| `forum.js` | **36 KiB** | every page |
 | the editor chunk | 431 KiB | first time a composer opens |
 
 The toolbar also re-renders only when the set of active buttons actually changes,

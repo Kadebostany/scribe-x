@@ -1,5 +1,6 @@
 import Extend from 'flarum/common/extenders';
 import ToolbarBuilder from './components/ToolbarBuilder';
+import VideoSettings from './components/VideoSettings';
 
 declare const m: any;
 
@@ -11,4 +12,10 @@ export default [
     // as every other setting and the page's own Save button persists it.
     return m(ToolbarBuilder, { setting: this.setting(SETTING) });
   }, 10),
+  new Extend.Admin().customSetting(function (this: any) {
+    return m(VideoSettings, {
+      enabled: this.setting('ernestdefoe-scribe.video_embeds', '1'),
+      off: this.setting('ernestdefoe-scribe.video_providers_off', '[]'),
+    });
+  }, 5),
 ];

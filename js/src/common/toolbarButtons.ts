@@ -29,7 +29,7 @@ export interface ScribeButton {
   /** Absent when the button opens a form instead of acting immediately. */
   run?: (e: Editor) => void;
   /** Opens a form rather than toggling immediately. */
-  prompt?: 'link' | 'image' | 'color' | 'highlight' | 'spoiler' | 'info' | 'table' | 'alignMenu' | 'tableMenu';
+  prompt?: 'link' | 'image' | 'video' | 'color' | 'highlight' | 'spoiler' | 'info' | 'table' | 'alignMenu' | 'tableMenu';
   /**
    * A short suffix drawn on the icon.
    *
@@ -105,6 +105,8 @@ export const SCRIBE_BUTTONS: ScribeButton[] = [
   { key: 'link', shortcut: 'Mod-k', icon: 'fas fa-link', label: 'link', prompt: 'link',
     active: (e) => e.isActive('link') },
   { key: 'image', icon: 'fas fa-image', label: 'image', prompt: 'image' },
+  { key: 'video', icon: 'fas fa-film', label: 'video', prompt: 'video',
+    active: (e) => e.isActive('scribeVideo') },
   { key: 'table', icon: 'fas fa-table', label: 'table', prompt: 'tableMenu' },
   { key: 'horizontalRule', icon: 'fas fa-minus', label: 'horizontal_rule',
     run: (e) => e.chain().focus().setHorizontalRule().run() },
@@ -118,7 +120,7 @@ export const SCRIBE_BUTTONS: ScribeButton[] = [
 export const DEFAULT_TOOLBAR = [
   'bold', 'italic', 'strike', 'code',
   'heading2', 'bulletList', 'orderedList', 'blockquote', 'codeBlock',
-  'link', 'image',
+  'link', 'image', 'video',
 ];
 
 /**

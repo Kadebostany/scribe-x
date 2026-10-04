@@ -27,6 +27,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table';
 import { Extension, Mark, Node, mergeAttributes } from '@tiptap/core';
 import { registeredExtensions } from '../registry';
+import { ScribeVideo, ScribeVideoPaste } from './video';
 
 /**
  * A colour is stored in `data-color` and filtered server-side by s9e's #color.
@@ -364,6 +365,8 @@ export function buildExtensions(placeholder: string) {
     ScribeSpoiler,
     ScribeInfo,
     ScribeReply,
+    ScribeVideo,
+    ScribeVideoPaste,
     Table.configure({ resizable: true }),
     TableRow,
     TableHeader,

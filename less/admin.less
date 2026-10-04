@@ -90,3 +90,32 @@
   gap: 8px;
   margin-top: 14px;
 }
+
+.Scribe-videoSettings {
+  .Scribe-videoProviders {
+    margin-top: 12px;
+    transition: opacity 0.15s ease;
+
+    &.is-disabled { opacity: 0.5; }
+  }
+
+  .Scribe-videoProvidersLabel {
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .Scribe-videoProviderList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 2px 16px;
+    margin: 0 0 8px;
+    padding: 0;
+    list-style: none;
+
+    .icon {
+      width: 1.2em;
+      text-align: center;
+      color: var(--muted-color, #777);
+    }
+  }
+}

@@ -50,6 +50,13 @@ class Configure
         foreach (Vocabulary::PASSTHROUGH as $element) {
             $plugin->allowElement($element);
         }
+
+        /*
+         * Video embeds are built from a registry rather than listed in
+         * Vocabulary, because each provider brings its own id pattern and its
+         * own URLs. See VideoEmbed.
+         */
+        (new VideoEmbed())->configure($config, $plugin, fn (string $key, string $fallback, array $params) => $this->translate($key, $fallback, $params));
     }
 
     /**
@@ -87,10 +94,15 @@ class Configure
      * not degrade one feature - it takes down every page that renders a post.
      * A missing translator is not worth that, so it falls back.
      */
-    private function translate(string $key, string $fallback): string
+    private function translate(string $key, string $fallback, array $params = []): string
     {
+        $fallback = strtr($fallback, array_combine(
+            array_map(fn ($name) => '{'.$name.'}', array_keys($params)),
+            array_values($params)
+        ));
+
         try {
-            $translated = resolve(TranslatorInterface::class)->trans($key);
+            $translated = resolve(TranslatorInterface::class)->trans($key, $params);
         } catch (\Throwable $e) {
             return $fallback;
         }

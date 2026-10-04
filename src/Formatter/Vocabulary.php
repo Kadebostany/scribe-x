@@ -120,6 +120,8 @@ abstract class Vocabulary
         'aside'   => 'SCRIBEINFO',
         'section' => 'SCRIBEREPLY',
         'figure'  => 'SCRIBEIMGALIGN',
+        // `video` => SCRIBEVIDEO is registered by VideoEmbed, from the
+        // provider registry, because each provider brings its own id pattern.
     ];
 
     public const EXTRA_TEMPLATES = [

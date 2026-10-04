@@ -9,6 +9,7 @@
 use Flarum\Extend;
 use Flarum\Extension\ExtensionManager;
 use ErnestDefoe\Scribe\Formatter\Configure;
+use ErnestDefoe\Scribe\Formatter\VideoEmbed;
 
 return [
     /*
@@ -79,6 +80,23 @@ return [
             $decoded = json_decode((string) $value, true);
 
             return is_array($decoded) && $decoded !== [] ? array_values(array_filter($decoded, 'is_string')) : null;
+        })
+        /*
+         * Video embeds. These decide what the EDITOR does with a pasted link and
+         * whether a click loads the player in the page; they never change how a
+         * stored post parses, so flipping them needs no formatter rebuild and
+         * leaves every existing post exactly as it was. With embeds off, or a
+         * provider off, the facade is simply the link it already is.
+         */
+        ->default('ernestdefoe-scribe.video_embeds', true)
+        ->default('ernestdefoe-scribe.video_providers_off', '[]')
+        ->serializeToForum('scribeVideoEmbeds', 'ernestdefoe-scribe.video_embeds', fn ($value) => (bool) $value)
+        ->serializeToForum('scribeVideoOff', 'ernestdefoe-scribe.video_providers_off', function ($value) {
+            $decoded = json_decode((string) $value, true);
+
+            return is_array($decoded)
+                ? array_values(array_intersect(array_keys(VideoEmbed::providers()), array_filter($decoded, 'is_string')))
+                : [];
         }),
 
     new Extend\Locales(__DIR__.'/locale'),

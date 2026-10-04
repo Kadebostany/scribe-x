@@ -4,6 +4,7 @@ import TextEditor from 'flarum/common/components/TextEditor';
 import CommentPost from 'flarum/forum/components/CommentPost';
 import ScribeEditorDriver from '../common/ScribeEditorDriver';
 import { applyReplyGates } from './replyGate';
+import { installVideoEmbeds, localiseVideos } from './videoEmbeds';
 
 export { default as ScribeEditorDriver } from '../common/ScribeEditorDriver';
 export { SCRIBE_BUTTONS, DEFAULT_TOOLBAR, allButtons } from '../common/toolbarButtons';
@@ -17,6 +18,9 @@ export { registerExtension, registerButton } from '../common/registry';
 export type { ScribeTiptapKit, ScribeExtensionFactory } from '../common/registry';
 
 app.initializers.add('ernestdefoe/scribe', () => {
+  // One delegated listener for every video facade, present and future.
+  installVideoEmbeds();
+
   /*
    * `buildEditor` is the sanctioned seam: core calls it with the container and
    * expects an EditorDriverInterface back. Replacing it is the whole of the
@@ -36,8 +40,17 @@ app.initializers.add('ernestdefoe/scribe', () => {
    */
   override(CommentPost.prototype, 'refreshContent', function (original: any) {
     original();
-    // @ts-ignore — `this.element` and `this.attrs` are Mithril component
-    // internals, untyped in dist-typings.
-    if (this.element) applyReplyGates(this.element, this.attrs.post);
+    // `this.element` and `this.attrs` are Mithril component internals, untyped
+    // in dist-typings.
+    const element = (this as any).element as HTMLElement | undefined;
+    if (element) {
+      applyReplyGates(element, (this as any).attrs.post);
+      try {
+        localiseVideos(element);
+      } catch (e) {
+        // Cosmetic only: the facade already works as a link without it.
+        console.error('[Scribe] could not localise video labels:', e);
+      }
+    }
   });
 });
