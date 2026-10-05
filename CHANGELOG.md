@@ -37,6 +37,16 @@ people actually link to.
   PHP tests cover the vocabulary and 87 JS tests the link recognition, including
   lookalike hosts such as `youtube.com.evil.example` and `facebook.com@evil`.
 
+- **"Reply to view" content is no longer sent to readers who have not
+  replied.** It used to be hidden with CSS only, so guests, crawlers and the API
+  had it. The server now empties the block for anyone but the author, the
+  discussion's moderators, admins and members who have replied, and opens it
+  without a reload once they do.
+- **fof/synopsis excerpts no longer quote a gated block.** Synopsis builds the
+  discussion-list excerpt from the stored post, which skipped the rule above;
+  with Synopsis enabled, readers who may not see the gate get an excerpt without
+  it. One query per page answers every discussion on it.
+
 ### Not embedded, on purpose
 
 `fb.watch`, `vm.tiktok.com` and `facebook.com/share/` links (redirects that would

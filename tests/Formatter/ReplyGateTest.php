@@ -2,6 +2,7 @@
 
 namespace ErnestDefoe\Scribe\Tests\Formatter;
 
+use ErnestDefoe\Scribe\Api\SynopsisExcerpt;
 use ErnestDefoe\Scribe\Formatter\Configure;
 use ErnestDefoe\Scribe\Formatter\ReplyGate;
 use PHPUnit\Framework\TestCase;
@@ -68,5 +69,23 @@ class ReplyGateTest extends TestCase
         $xml = $this->xml('<p>Nothing <em>gated</em> here.</p>');
 
         $this->assertSame($xml, (new ReplyGate())(self::$renderer, null, $xml, null));
+    }
+
+    /**
+     * fof/synopsis builds its excerpt from the stored XML, which the render
+     * callback never sees. The rebuilt excerpt drops the gated words and keeps
+     * Synopsis's own length cap.
+     */
+    public function test_synopsis_excerpt_drops_gated_text_and_keeps_its_length(): void
+    {
+        $xml = $this->xml('<p>Before the gate.</p><section class="Scribe-replyGate"><p>The code is 4471.</p></section><p>After it.</p>');
+        $full = trim(preg_replace('/\s+/', ' ', \s9e\TextFormatter\Utils::removeFormatting($xml)));
+        $this->assertStringContainsString('4471', $full, 'the raw excerpt Synopsis builds leaks the gate');
+
+        $this->assertSame('Before the gate.After it.', SynopsisExcerpt::withheld($xml, $full));
+        $this->assertSame('Before', SynopsisExcerpt::withheld($xml, mb_substr($full, 0, 6)), 'a cut excerpt stays cut at the same length');
+
+        $only = $this->xml('<section class="Scribe-replyGate"><p>All of it is gated.</p></section>');
+        $this->assertNull(SynopsisExcerpt::withheld($only, 'All of it is gated.'));
     }
 }

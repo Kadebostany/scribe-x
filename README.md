@@ -66,10 +66,12 @@ message instead. The post's author, moderators of the discussion and admins
 always get it. When a reader replies, the gated posts are fetched again and open
 without a page reload.
 
-Extensions that read a post's stored text directly, rather than rendering it,
-bypass this: an excerpt built from the raw post (fof/synopsis, for one) can
-still quote the opening of a gated block, and forum search still matches words
-inside one. If a reader must never see something, keep it out of the post.
+fof/synopsis discussion-list excerpts follow the same rule: a reader who may
+not see the gated content gets an excerpt without it.
+
+Forum search reads the stored text directly, so it still matches words inside a
+gate (it shows the discussion, never the words). If a reader must never see
+something, keep it out of the post.
 
 ## Video embeds
 

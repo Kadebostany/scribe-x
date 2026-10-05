@@ -4,6 +4,7 @@ namespace ErnestDefoe\Scribe\Formatter;
 
 use DOMDocument;
 use DOMElement;
+use Flarum\Discussion\Discussion;
 use Flarum\Http\RequestUtil;
 use Flarum\Post\Post;
 use Flarum\User\User;
@@ -32,8 +33,13 @@ use WeakMap;
  */
 class ReplyGate
 {
-    /** @var WeakMap<ServerRequestInterface, array<int, bool>>|null */
-    private static ?WeakMap $entitled = null;
+    /**
+     * Per request: discussions whose answer is wanted soon (`pending`), and the
+     * answers already known (`replied`, `moderates`).
+     *
+     * @var WeakMap<ServerRequestInterface, array{pending: array<int, true>, replied: array<int, bool>, moderates: array<int, bool>}>|null
+     */
+    private static ?WeakMap $known = null;
 
     public function __invoke(Renderer $renderer, $context, string $xml, ?ServerRequestInterface $request = null): string
     {
@@ -47,14 +53,32 @@ class ReplyGate
             return $xml;
         }
 
-        if ($request !== null && $this->entitled(RequestUtil::getActor($request), $context, $request)) {
+        if ($request !== null && self::entitled(RequestUtil::getActor($request), $context, $request)) {
             return $xml;
         }
 
         return self::withhold($xml);
     }
 
-    private function entitled(User $actor, Post $post, ServerRequestInterface $request): bool
+    /**
+     * Say that this request will ask about a discussion, so the "has replied"
+     * lookup that follows covers it in the same query as the rest.
+     */
+    public static function expect(ServerRequestInterface $request, int $discussionId): void
+    {
+        self::$known ??= new WeakMap();
+        $known = self::$known[$request] ?? ['pending' => [], 'replied' => [], 'moderates' => []];
+        $known['pending'][$discussionId] = true;
+        self::$known[$request] = $known;
+    }
+
+    /**
+     * May this actor see the gated content of this post? The author, admins,
+     * anyone who can edit posts in the discussion, and anyone with a visible
+     * comment in it. One query per request answers every discussion expected
+     * so far; never one per post.
+     */
+    public static function entitled(User $actor, Post $post, ServerRequestInterface $request, ?Discussion $discussion = null): bool
     {
         if ($actor->isGuest()) {
             return false;
@@ -64,25 +88,36 @@ class ReplyGate
             return true;
         }
 
-        self::$entitled ??= new WeakMap();
-        $known = self::$entitled[$request] ?? [];
+        self::$known ??= new WeakMap();
+        $known = self::$known[$request] ?? ['pending' => [], 'replied' => [], 'moderates' => []];
         $discussionId = (int) $post->discussion_id;
 
-        if (! array_key_exists($discussionId, $known)) {
-            $discussion = $post->discussion;
-
-            $known[$discussionId] = ($discussion && $actor->can('editPosts', $discussion))
-                || Post::query()
-                    ->where('discussion_id', $discussionId)
-                    ->where('user_id', $actor->id)
-                    ->where('type', 'comment')
-                    ->whereNull('hidden_at')
-                    ->exists();
-
-            self::$entitled[$request] = $known;
+        if (! array_key_exists($discussionId, $known['moderates'])) {
+            $discussion ??= $post->discussion;
+            $known['moderates'][$discussionId] = $discussion && $actor->can('editPosts', $discussion);
         }
 
-        return $known[$discussionId];
+        if (! $known['moderates'][$discussionId] && ! array_key_exists($discussionId, $known['replied'])) {
+            $ask = array_keys(array_diff_key($known['pending'] + [$discussionId => true], $known['replied']));
+            $replied = Post::query()
+                ->whereIn('discussion_id', $ask)
+                ->where('user_id', $actor->id)
+                ->where('type', 'comment')
+                ->whereNull('hidden_at')
+                ->distinct()
+                ->pluck('discussion_id')
+                ->all();
+
+            $known['replied'] += array_fill_keys($ask, false);
+            foreach ($replied as $id) {
+                $known['replied'][(int) $id] = true;
+            }
+            $known['pending'] = [];
+        }
+
+        self::$known[$request] = $known;
+
+        return $known['moderates'][$discussionId] || $known['replied'][$discussionId];
     }
 
     /**

@@ -6,8 +6,10 @@
  * Deliberately does NOT depend on flarum/markdown. See src/Formatter/Vocabulary.
  */
 
+use Flarum\Api\Resource\DiscussionResource;
 use Flarum\Extend;
 use Flarum\Extension\ExtensionManager;
+use ErnestDefoe\Scribe\Api\SynopsisExcerpt;
 use ErnestDefoe\Scribe\Formatter\BareDiscordLinks;
 use ErnestDefoe\Scribe\Formatter\Configure;
 use ErnestDefoe\Scribe\Formatter\ReplyGate;
@@ -71,6 +73,19 @@ return [
         ->parse(BareDiscordLinks::class)
         // "Reply to view" content leaves the server only for viewers entitled to it.
         ->render(ReplyGate::class),
+
+    /*
+     * fof/synopsis builds its discussion-list excerpt from the stored XML, so
+     * the render callback above never runs on it. This keeps gated content out
+     * of the excerpt too. fof-synopsis is an optional dependency in
+     * composer.json so this field mutator runs AFTER Synopsis adds the field;
+     * booted first, it would mutate nothing.
+     */
+    (new Extend\Conditional())
+        ->whenExtensionEnabled('fof-synopsis', fn () => [
+            (new Extend\ApiResource(DiscussionResource::class))
+                ->field('synopsisExcerpt', SynopsisExcerpt::class),
+        ]),
 
     /*
      * Which buttons the toolbar shows, in order, as chosen in the AdminCP.

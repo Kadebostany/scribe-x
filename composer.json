@@ -36,6 +36,9 @@
         "flarum-extension": {
             "title": "Scribe",
             "category": "feature",
+            "optional-dependencies": [
+                "fof/synopsis"
+            ],
             "icon": {
                 "name": "fas fa-pen-nib",
                 "backgroundColor": "#2b3a55",
