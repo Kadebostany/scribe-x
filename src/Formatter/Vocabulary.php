@@ -186,17 +186,13 @@ abstract class Vocabulary
          */
         'SCRIBEINFO'  => '<aside class="Scribe-info"><xsl:if test="@label"><xsl:attribute name="data-title"><xsl:value-of select="@label"/></xsl:attribute></xsl:if><xsl:if test="@font"><xsl:attribute name="data-font"><xsl:value-of select="@font"/></xsl:attribute></xsl:if><xsl:if test="@bg"><xsl:attribute name="data-bg"><xsl:value-of select="@bg"/></xsl:attribute></xsl:if><xsl:if test="@border"><xsl:attribute name="data-border"><xsl:value-of select="@border"/></xsl:attribute></xsl:if><xsl:if test="@bg or @border or @font"><xsl:attribute name="style"><xsl:if test="@bg">background:<xsl:value-of select="@bg"/>;</xsl:if><xsl:if test="@border">border-color:<xsl:value-of select="@border"/>;</xsl:if><xsl:if test="@font">color:<xsl:value-of select="@font"/>;</xsl:if></xsl:attribute></xsl:if><xsl:if test="@label"><div class="Scribe-infoTitle"><xsl:value-of select="@label"/></div></xsl:if><div class="Scribe-infoBody"><xsl:apply-templates/></div></aside>',
         /*
-         * 🚨 Deliberately NOT enforced server-side. An earlier version used
-         * an s9e rendering parameter to omit the real children from the XML
-         * entirely unless the viewer had replied — airtight, but it meant
-         * "just replied" never unlocked the block without a full page
-         * reload, because the HTML is only computed once per request. This
-         * forum doesn't need airtight (it's members-only already, and
-         * nobody's inspecting page source for it) — both the locked message
-         * and the real content ship every time, and js/src/forum/replyGate.ts
-         * toggles which one is visible, client-side, reactively. It updates
-         * the instant a reply posts because it reads the same store the
-         * reply just landed in — no server round trip, no reload.
+         * 🚨 Enforced server-side by ReplyGate (a Formatter render callback):
+         * for a viewer who has not replied, the children are removed from the
+         * XML before this template runs and the gate carries @withheld. For
+         * everyone entitled, the real content ships and js/src/forum/replyGate.ts
+         * toggles which half is visible, as before. When a viewer replies, the
+         * JS fetches each withheld post again, so it still unlocks without a
+         * page reload.
          */
         /*
          * The locked message is a TOKEN, not a sentence.
@@ -211,7 +207,7 @@ abstract class Vocabulary
          * viewer's own translation on render. The baked-in default is what
          * keeps the message sensible when JS never runs.
          */
-        'SCRIBEREPLY' => '<div class="Scribe-replyGate"><p class="Scribe-replyGateLocked">%scribe.replyGateLocked%</p><div class="Scribe-replyGateBody"><xsl:apply-templates/></div></div>',
+        'SCRIBEREPLY' => '<div class="Scribe-replyGate"><xsl:if test="@withheld"><xsl:attribute name="data-withheld">1</xsl:attribute></xsl:if><p class="Scribe-replyGateLocked">%scribe.replyGateLocked%</p><div class="Scribe-replyGateBody"><xsl:apply-templates/></div></div>',
         /*
          * 🚨 `align` on the image ITSELF doesn't work: `IMG` is a tag
          * `flarum/bbcode` claims when enabled (registerTags skips it,

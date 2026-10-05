@@ -10,6 +10,7 @@ use Flarum\Extend;
 use Flarum\Extension\ExtensionManager;
 use ErnestDefoe\Scribe\Formatter\BareDiscordLinks;
 use ErnestDefoe\Scribe\Formatter\Configure;
+use ErnestDefoe\Scribe\Formatter\ReplyGate;
 use ErnestDefoe\Scribe\Formatter\VideoEmbed;
 
 return [
@@ -67,7 +68,9 @@ return [
 
     (new Extend\Formatter)
         ->configure(Configure::class)
-        ->parse(BareDiscordLinks::class),
+        ->parse(BareDiscordLinks::class)
+        // "Reply to view" content leaves the server only for viewers entitled to it.
+        ->render(ReplyGate::class),
 
     /*
      * Which buttons the toolbar shows, in order, as chosen in the AdminCP.

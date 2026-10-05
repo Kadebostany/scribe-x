@@ -53,20 +53,23 @@ Markdown could not represent:
 - **Spoilers** — a titled block the reader clicks to open.
 - **Info boxes** — a titled callout for the thing people keep missing.
 - **Reply-to-view** — content that stays folded away until the reader has
-  replied to the discussion. **Read the caveat below before you use it.**
+  replied to the discussion. [How it is kept back](#reply-to-view).
 - **Video embeds** — YouTube, Vimeo, TikTok, Facebook, Instagram, Twitch and
   more, loaded only when the reader presses play. [Details below](#video-embeds).
 
-### Reply-to-view is a nudge, not a lock
+### Reply-to-view
 
-The gated content is in the page. It is sent to every reader in the post's HTML,
-and the browser is what hides it — so anyone who opens the developer tools, reads
-the page source, or disables CSS can read it without replying.
+The gated content is removed on the server before the post is sent to anyone
+who has not replied: guests, members who have not posted in the discussion,
+search engines, and notification emails. They see the "reply to see this"
+message instead. The post's author, moderators of the discussion and admins
+always get it. When a reader replies, the gated posts are fetched again and open
+without a page reload.
 
-That makes it a fine way to encourage participation, and the wrong tool for
-anything you actually need withheld: no private information, nothing paid, no
-answer key. If a reader must not be able to see something, it cannot be in the
-post at all.
+Extensions that read a post's stored text directly, rather than rendering it,
+bypass this: an excerpt built from the raw post (fof/synopsis, for one) can
+still quote the opening of a gated block, and forum search still matches words
+inside one. If a reader must never see something, keep it out of the post.
 
 ## Video embeds
 
