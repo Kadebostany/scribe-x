@@ -18,7 +18,6 @@ use Illuminate\Database\Eloquent\Casts\AsStringable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Concerns\HasUniqueStringIds;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon as IlluminateCarbon;
 use Illuminate\Support\Collection;
@@ -81,7 +80,7 @@ class ModelCastHelper
         $cast = $this->parseCast($cast);
 
         $attributeType = match ($cast) {
-            'int', 'integer', 'timestamp' => new IntegerType(),
+            'int', 'integer', 'timestamp' => $originalType->isInteger()->yes() ? $originalType : new IntegerType(),
             'real', 'float', 'double' => new FloatType(),
             'decimal' => TypeCombinator::intersect(new StringType(), new AccessoryNumericStringType()),
             'string' => new StringType(),
@@ -141,9 +140,9 @@ class ModelCastHelper
         $cast = $this->parseCast($cast);
 
         $attributeType = match ($cast) {
-            'int', 'integer', 'timestamp' => new IntegerType(),
+            'int', 'integer', 'timestamp' => $originalType->isInteger()->yes() ? $originalType : new IntegerType(),
             'real', 'float', 'double' => new FloatType(),
-            'decimal' => TypeCombinator::intersect(new StringType(), new AccessoryNumericStringType(), new FloatType()),
+            'decimal' => TypeCombinator::union(TypeCombinator::intersect(new StringType(), new AccessoryNumericStringType()), new IntegerType(), new FloatType()),
             'string' => new StringType(),
             'bool', 'boolean' => TypeCombinator::union(new BooleanType(), new ConstantIntegerType(0), new ConstantIntegerType(1)),
             'object' => new ObjectType(stdClass::class),
@@ -253,8 +252,7 @@ class ModelCastHelper
         }
 
         try {
-            /** @var Model $modelInstance */
-            $modelInstance = $modelClassReflection->getNativeReflection()->newInstanceWithoutConstructor();
+            $modelInstance = ModelHelper::newInstanceWithoutConstructor($modelClassReflection);
         } catch (ReflectionException) {
             throw new ShouldNotHappenException();
         }

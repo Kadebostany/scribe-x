@@ -42,6 +42,7 @@ namespace Symfony\Polyfill\Intl\MessageFormatter;
  *
  * It only supports the following message formats:
  *  * plural formatting for english ('one' and 'other' selectors)
+ *  * ordinal formatting for english ('one', 'two', 'few' and 'other' selectors)
  *  * select format
  *  * simple parameters
  *  * integer number parameters
@@ -200,7 +201,7 @@ class MessageFormatter
                             throw new \DomainException('Message pattern is invalid.');
                         }
                         $selector = trim($sub[$i]);
-                        if ('plural' === $type && 0 === $i && 0 === strncmp($selector, 'offset:', 7)) {
+                        if ('select' !== $type && 0 === $i && 0 === strncmp($selector, 'offset:', 7)) {
                             $offsetEnd = strpos(str_replace(["\n", "\r", "\t"], ' ', $selector), ' ', 7);
                             $selector = false !== $offsetEnd ? trim(substr($selector, 1 + $offsetEnd)) : '';
                         }
@@ -286,7 +287,6 @@ class MessageFormatter
             case 'ordinal':
             case 'duration':
             case 'choice':
-            case 'selectordinal':
                 throw new \DomainException(\sprintf('The PHP intl extension is required to use the "%s" message format.', $type));
             case 'number':
                 $format = isset($token[2]) ? trim($token[2]) : null;
@@ -294,13 +294,16 @@ class MessageFormatter
                     throw new \DomainException('The PHP intl extension is required to use the "number" message format with non-integer values.');
                 }
 
-                $number = number_format($arg); // XXX use NumberFormatter?
-                if (null === $format && false !== $pos = strpos($arg, '.')) {
-                    // add decimals with unknown length
-                    $number .= '.'.substr($arg, $pos + 1);
+                if ('integer' !== ($token[2] ?? null)) {
+                    return self::formatNumber((float) $arg, null !== $format ? 0 : 3);
                 }
 
-                return $number;
+                // Like intl, which truncates the argument to a 64-bit integer when no space surrounds "integer"
+                if (\is_float($arg) && !(-9.2233720368547758E18 <= $arg && $arg < 9.2233720368547758E18)) {
+                    throw new \DomainException('Found PHP float with absolute value too large for 64 bit integer argument.');
+                }
+
+                return preg_replace('/\B(?=(?:\d{3})+$)/', ',', (string) (int) $arg);
 
             case 'none':
                 return $arg;
@@ -330,6 +333,7 @@ class MessageFormatter
                 break;
 
             case 'plural': // TODO make it locale-dependent based on symfony/translation rules
+            case 'selectordinal':
                 /* http://icu-project.org/apiref/icu4c/classicu_1_1PluralFormat.html
                 pluralStyle = [offsetValue] (selector '{' message '}')+
                 offsetValue = "offset:" number
@@ -345,6 +349,8 @@ class MessageFormatter
                 $c = \count($plural);
                 $message = false;
                 $offset = 0;
+                $arg = (float) $arg; // like intl, which reads the argument as a double
+                $number = self::formatNumber($arg);
                 for ($i = 0; 1 + $i < $c; ++$i) {
                     if (\is_array($plural[$i]) || !\is_array($plural[1 + $i])) {
                         throw new \DomainException('Message pattern is invalid.');
@@ -355,20 +361,105 @@ class MessageFormatter
                         $pos = strpos(str_replace(["\n", "\r", "\t"], ' ', $selector), ' ', 7);
                         $offset = (int) trim(substr($selector, 7, $pos - 7));
                         $selector = trim(substr($selector, 1 + $pos, \strlen($selector)));
+                        $number = self::formatNumber($arg - $offset);
                     }
+                    // Explicit values take precedence over keywords
+                    if ('=' === $selector[0] && (float) substr($selector, 1, \strlen($selector)) == $arg) {
+                        $message = $plural[$i];
+                        break;
+                    }
+                    // Like intl, keywords are selected from the number as printed
                     if (false === $message && 'other' === $selector
-                        || '=' === $selector[0] && (int) substr($selector, 1, \strlen($selector)) === $arg
-                        || 'one' === $selector && 1 == $arg - $offset
+                        || 'plural' === $type && 'one' === $selector && '1' === ltrim($number, '-')
+                        || 'selectordinal' === $type && self::getEnglishOrdinalCategory((float) str_replace(',', '', $number)) === $selector
                     ) {
-                        $message = implode(',', str_replace('#', $arg - $offset, $plural[$i]));
+                        $message = $plural[$i];
                     }
                 }
                 if (false !== $message) {
-                    return self::parseTokens(self::tokenizePattern($message), $values, $locale);
+                    $message = self::tokenizePattern(implode(',', $message));
+                    // Replace # outside of nested arguments only
+                    foreach ($message as $j => $part) {
+                        if (\is_string($part)) {
+                            $message[$j] = str_replace('#', $number, $part);
+                        }
+                    }
+
+                    return self::parseTokens($message, $values, $locale);
                 }
                 break;
         }
 
         throw new \DomainException('Message pattern is invalid.');
+    }
+
+    /**
+     * @see https://www.unicode.org/cldr/charts/latest/supplemental/language_plural_rules.html#en
+     */
+    private static function getEnglishOrdinalCategory($number): string
+    {
+        $n10 = fmod(abs($number), 10);
+        $n100 = fmod(abs($number), 100);
+
+        if (1.0 === $n10 && 11.0 !== $n100) {
+            return 'one';
+        }
+        if (2.0 === $n10 && 12.0 !== $n100) {
+            return 'two';
+        }
+        if (3.0 === $n10 && 13.0 !== $n100) {
+            return 'few';
+        }
+
+        return 'other';
+    }
+
+    /**
+     * Formats a float like ICU does in English: from its shortest decimal
+     * form, rounded half-even to at most $maxFractionDigits fraction digits.
+     */
+    private static function formatNumber(float $number, int $maxFractionDigits = 3): string
+    {
+        if (is_nan($number)) {
+            return 'NaN';
+        }
+
+        $sign = '-' === ((string) $number)[0] ? '-' : '';
+
+        if (is_infinite($number)) {
+            return $sign.'∞';
+        }
+
+        $i = 0;
+        do {
+            $digits = \sprintf('%.'.$i.'e', abs($number));
+        } while (abs($number) !== (float) $digits && 17 > ++$i);
+
+        [$digits, $exp] = explode('e', $digits);
+        $digits = str_replace('.', '', $digits);
+        $exp = (int) $exp;
+
+        if (0 > $exp) {
+            $digits = str_repeat('0', -$exp).$digits;
+            $exp = 0;
+        }
+
+        // Keep the integer digits and the fraction digits, then round on the rest
+        $length = $exp + 1 + $maxFractionDigits;
+        $digits = str_pad($digits, $length + 1, '0');
+        $rest = substr($digits, $length);
+        $digits = substr($digits, 0, $length);
+
+        if ('5' < $rest[0] || ('5' === $rest[0] && ('' !== rtrim(substr($rest, 1), '0') || $digits[-1] % 2))) {
+            for ($i = $length - 1; 0 <= $i && '9' === $digits[$i]; --$i) {
+                $digits[$i] = '0';
+            }
+            $digits = 0 > $i ? '1'.$digits : substr_replace($digits, (string) ($digits[$i] + 1), $i, 1);
+        }
+
+        $int = ltrim(substr($digits, 0, \strlen($digits) - $maxFractionDigits), '0') ?: '0';
+        $fraction = rtrim(substr($digits, \strlen($digits) - $maxFractionDigits), '0');
+
+        return $sign.preg_replace('/\B(?=(?:\d{3})+$)/', ',', $int).('' === $fraction ? '' : '.'.$fraction);
     }
 }
