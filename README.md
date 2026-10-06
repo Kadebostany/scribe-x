@@ -272,6 +272,10 @@ with). Your existing posts will render exactly as before.
 - Flarum 2.0
 - PHP 8.3+
 
+## Discuss
+
+Questions, ideas and release notes: [Scribe on discuss.flarum.org](https://discuss.flarum.org/d/39790-scribe-a-true-wysiwyg-editor-built-using-ai).
+
 ## Licence
 
 MIT.
