@@ -272,9 +272,11 @@ with). Your existing posts will render exactly as before.
 - Flarum 2.0
 - PHP 8.3+
 
-## Discuss
+## Support
 
-Questions, ideas and release notes: [Scribe on discuss.flarum.org](https://discuss.flarum.org/d/39790-scribe-a-true-wysiwyg-editor-built-using-ai).
+- **Support forum:** [Scribe on ernestdefoe.online](https://ernestdefoe.online/d/80)
+- **Flarum community:** [Scribe on discuss.flarum.org](https://discuss.flarum.org/d/39790-scribe-a-true-wysiwyg-editor-built-using-ai)
+- **Bug reports:** [GitHub issues](https://github.com/ernestdefoe/scribe/issues)
 
 ## Licence
 
