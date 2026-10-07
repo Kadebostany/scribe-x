@@ -42,6 +42,8 @@ ernestdefoe-scribe:
       split_cells: Split cells
       row_height: Row height (px)
       column_width: Column width (px)
+      image_width: Image width (px)
+      image_height: Image height (px)
       horizontal_rule: Divider
       undo: Undo
       redo: Redo

@@ -113,6 +113,7 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
           {buttonsFor(configured).map((b) => this.button(b, editor))}
         </div>
         {this.prompt && this.promptRow(editor)}
+        {editor.isActive('image') && this.imageSizeRow(editor)}
       </div>
     );
   }
@@ -200,6 +201,44 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
           }}
         />
       </Tooltip>
+    );
+  }
+
+  /**
+   * Width/height of the selected image, typed. Aspect ratio is always kept:
+   * editing one side derives the other from the image's current ratio. Writes
+   * the same `width`/`height` attrs the corner-drag commits, so both agree.
+   */
+  imageSizeRow(editor: Editor) {
+    const { from } = editor.state.selection;
+    const dom = editor.view.nodeDOM(from) as HTMLElement | null;
+    const img = dom?.tagName === 'IMG' ? dom : dom?.querySelector('img');
+    const rect = img?.getBoundingClientRect();
+    const attrs = editor.getAttributes('image');
+    const w = attrs.width || (rect ? Math.round(rect.width) : null);
+    const h = attrs.height || (rect ? Math.round(rect.height) : null);
+    if (!w || !h) return null;
+
+    /*
+     * 🚨 TipTap's resize node view applies `width`/`height` to the <img> once,
+     * at mount, and again only on a drag — an attribute change from elsewhere
+     * updates the doc but not the DOM. So the style is set by hand too.
+     */
+    const apply = (width: number, height: number) => {
+      width = Math.round(width);
+      height = Math.round(height);
+      if (img) {
+        img.style.width = `${width}px`;
+        img.style.height = `${height}px`;
+      }
+      editor.chain().updateAttributes('image', { width, height }).run();
+    };
+
+    return (
+      <div className="Scribe-prompt Scribe-prompt--menu">
+        {this.sizeInput('image_width', w, (n) => n && apply(n, (n * h) / w))}
+        {this.sizeInput('image_height', h, (n) => n && apply((n * w) / h, n))}
+      </div>
     );
   }
 

@@ -85,7 +85,7 @@ abstract class Vocabulary
         'H5'     => '<h5><xsl:if test="@align"><xsl:attribute name="style"><xsl:text>text-align:</xsl:text><xsl:value-of select="@align"/></xsl:attribute></xsl:if><xsl:apply-templates/></h5>',
         'H6'     => '<h6><xsl:if test="@align"><xsl:attribute name="style"><xsl:text>text-align:</xsl:text><xsl:value-of select="@align"/></xsl:attribute></xsl:if><xsl:apply-templates/></h6>',
         'HR'     => '<hr/>',
-        'IMG'    => '<img src="{@src}"><xsl:copy-of select="@alt"/><xsl:copy-of select="@title"/></img>',
+        'IMG'    => '<img src="{@src}"><xsl:copy-of select="@alt"/><xsl:copy-of select="@title"/><xsl:copy-of select="@width"/><xsl:copy-of select="@height"/></img>',
         'LI'     => '<li><xsl:apply-templates/></li>',
         'LIST'   => '<xsl:choose><xsl:when test="not(@type)"><ul><xsl:apply-templates/></ul></xsl:when><xsl:otherwise><ol><xsl:copy-of select="@start"/><xsl:apply-templates/></ol></xsl:otherwise></xsl:choose>',
         'QUOTE'  => '<blockquote><div><xsl:apply-templates/></div></blockquote>',
@@ -231,7 +231,7 @@ abstract class Vocabulary
     public const ATTRIBUTES = [
         'CODE'  => ['lang' => '#simpletext'],
         'EMAIL' => ['email' => '#email'],
-        'IMG'   => ['src' => '#url', 'alt' => '#simpletext', 'title' => '#simpletext'],
+        'IMG'   => ['src' => '#url', 'alt' => '#simpletext', 'title' => '#simpletext', 'width' => '#uint', 'height' => '#uint'],
         'LIST'  => ['type' => '#simpletext', 'start' => '#uint'],
         'URL'   => ['url' => '#url', 'title' => '#simpletext'],
         'TR'    => ['rowheight' => '#uint'],

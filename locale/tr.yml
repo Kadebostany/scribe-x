@@ -38,6 +38,8 @@ ernestdefoe-scribe:
       split_cells: Hücreleri böl
       row_height: Satır yüksekliği (px)
       column_width: Sütun genişliği (px)
+      image_width: Görsel genişliği (px)
+      image_height: Görsel yüksekliği (px)
       horizontal_rule: Ayırıcı çizgi
       undo: Geri al
       redo: Yinele
