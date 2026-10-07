@@ -24,6 +24,8 @@ use ReflectionClass;
 use ReflectionMethod;
 use SortDirection;
 
+use function Illuminate\Support\enum_value;
+
 /**
  * @template TModel of \Illuminate\Database\Eloquent\Model
  *
@@ -126,6 +128,7 @@ class Builder implements BuilderContract
         'insert',
         'insertgetid',
         'insertorignore',
+        'insertorignorereturning',
         'insertusing',
         'insertorignoreusing',
         'max',
@@ -432,6 +435,12 @@ class Builder implements BuilderContract
      */
     public function whereNot($column, $operator = null, $value = null, $boolean = 'and')
     {
+        if (is_array($column)) {
+            $this->query->whereNot($column, $operator, $value, $boolean);
+
+            return $this;
+        }
+
         return $this->where($column, $operator, $value, $boolean.' not');
     }
 
@@ -643,6 +652,8 @@ class Builder implements BuilderContract
         $id = $id instanceof Arrayable ? $id->toArray() : $id;
 
         if (is_array($id)) {
+            $id = array_map(enum_value(...), $id);
+
             if (count($result) !== count(array_unique($id))) {
                 throw (new ModelNotFoundException)->setModel(
                     get_class($this->model), array_diff($id, $result->modelKeys())
@@ -1766,7 +1777,7 @@ class Builder implements BuilderContract
         if ($callback instanceof Closure) {
             $eagerLoad = $this->parseWithRelations([$relations => $callback]);
         } else {
-            $eagerLoad = $this->parseWithRelations(is_string($relations) ? func_get_args() : $relations);
+            $eagerLoad = $this->parseWithRelations(is_string($relations) ? array_filter(func_get_args()) : $relations);
         }
 
         $this->eagerLoad = array_merge($this->eagerLoad, $eagerLoad);
@@ -2185,6 +2196,16 @@ class Builder implements BuilderContract
     {
         $column = $column instanceof Expression ? $column->getValue($this->getGrammar()) : $column;
 
+        if (! is_null($alias = $this->getTableAlias())) {
+            if (! str_contains($column, '.')) {
+                return $alias.'.'.$column;
+            }
+
+            if (str_starts_with($column, $table = $this->model->getTable().'.')) {
+                return $alias.'.'.substr($column, strlen($table));
+            }
+        }
+
         return $this->model->qualifyColumn($column);
     }
 
@@ -2196,7 +2217,29 @@ class Builder implements BuilderContract
      */
     public function qualifyColumns($columns)
     {
-        return $this->model->qualifyColumns($columns);
+        $qualified = [];
+
+        foreach ($columns as $key => $column) {
+            $qualified[$key] = $this->qualifyColumn($column);
+        }
+
+        return $qualified;
+    }
+
+    /**
+     * Get the alias given to the query's table, if any.
+     *
+     * @return string|null
+     */
+    protected function getTableAlias()
+    {
+        if (! is_string($this->query->from)) {
+            return null;
+        }
+
+        $segments = preg_split('/\s+as\s+/i', $this->query->from);
+
+        return count($segments) > 1 ? array_last($segments) : null;
     }
 
     /**

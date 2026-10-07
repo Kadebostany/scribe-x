@@ -737,6 +737,7 @@ return array(
     'PHPUnit\\Logging\\TestDox\\TestResultCollectionIterator' => $vendorDir . '/phpunit/phpunit/src/Logging/TestDox/TestResult/TestResultCollectionIterator.php',
     'PHPUnit\\Logging\\TestDox\\TestResultCollector' => $vendorDir . '/phpunit/phpunit/src/Logging/TestDox/TestResult/TestResultCollector.php',
     'PHPUnit\\Logging\\TestDox\\TestSkippedSubscriber' => $vendorDir . '/phpunit/phpunit/src/Logging/TestDox/TestResult/Subscriber/TestSkippedSubscriber.php',
+    'PHPUnit\\Logging\\TestDox\\TestSuiteSkippedSubscriber' => $vendorDir . '/phpunit/phpunit/src/Logging/TestDox/TestResult/Subscriber/TestSuiteSkippedSubscriber.php',
     'PHPUnit\\Logging\\TestDox\\TestTriggeredDeprecationSubscriber' => $vendorDir . '/phpunit/phpunit/src/Logging/TestDox/TestResult/Subscriber/TestTriggeredDeprecationSubscriber.php',
     'PHPUnit\\Logging\\TestDox\\TestTriggeredNoticeSubscriber' => $vendorDir . '/phpunit/phpunit/src/Logging/TestDox/TestResult/Subscriber/TestTriggeredNoticeSubscriber.php',
     'PHPUnit\\Logging\\TestDox\\TestTriggeredPhpDeprecationSubscriber' => $vendorDir . '/phpunit/phpunit/src/Logging/TestDox/TestResult/Subscriber/TestTriggeredPhpDeprecationSubscriber.php',

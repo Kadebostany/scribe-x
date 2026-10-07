@@ -6,6 +6,72 @@ stack.
 Every entry links to its full release notes, which carry the reasoning and, for
 the bugs, what actually went wrong.
 
+## [Unreleased]
+
+**Video embeds.** Asked for by a user: *a way to either embed /
+auto embed YouTube vids would be amazing.* Widened to most of the video sites
+people actually link to.
+
+### Added
+
+- **Paste a video link on its own line and it becomes a video.** A link inside a
+  sentence stays a link. A **Video** toolbar button does the same from a form,
+  and says why when a link cannot be embedded.
+- **YouTube (and Shorts), Vimeo, Facebook videos and Reels, Instagram posts and
+  Reels, TikTok, ESPN, Twitch clips and videos, Streamable, Dailymotion and
+  Loom.** Vertical formats get a vertical box. Start times in the link are kept.
+- **Click to load.** A post shows a preview, and nothing from the video site
+  (no player, no script, no cookie) is loaded until the reader presses play.
+  YouTube plays from `youtube-nocookie.com`, Vimeo with `dnt=1`. With JavaScript
+  off the preview is a plain link to the video.
+- **Captions**, typed under the video in the composer. Replace, remove and drag
+  like any other block.
+- **AdminCP switches** for embeds as a whole and for each provider.
+
+### Security
+
+- A video is stored as a provider and an id, never a URL. The server checks the
+  pair against that provider's own id pattern, and every URL the reader's browser
+  is sent to is rebuilt from it. Hand-made embeds posted through the API, with
+  quotes, `javascript:`, foreign hosts or another provider's id, are dropped. 38
+  PHP tests cover the vocabulary and 87 JS tests the link recognition, including
+  lookalike hosts such as `youtube.com.evil.example` and `facebook.com@evil`.
+
+- **"Reply to view" content is no longer sent to readers who have not
+  replied.** It used to be hidden with CSS only, so guests, crawlers and the API
+  had it. The server now empties the block for anyone but the author, the
+  discussion's moderators, admins and members who have replied, and opens it
+  without a reload once they do.
+- **fof/synopsis excerpts no longer quote a gated block.** Synopsis builds the
+  discussion-list excerpt from the stored post, which skipped the rule above;
+  with Synopsis enabled, readers who may not see the gate get an excerpt without
+  it. One query per page answers every discussion on it.
+
+### Not embedded, on purpose
+
+`fb.watch`, `vm.tiktok.com` and `facebook.com/share/` links (redirects that would
+need a request to resolve), Rumble (its public links lack the player id), Kick
+and X/Twitter stay links.
+
+## [1.3.0] — 2026-10-03
+
+**Keyboard shortcuts you can find.** The editor already answered to most of the
+usual shortcuts, but nothing said so, and the most-used one, Ctrl+K for a link,
+did nothing at all. Requested on discuss.flarum.org: *Shortcuts for all the
+available tools of the text editor?*
+
+### Added
+
+- **Ctrl+K (⌘K) opens the link box**, the same as the link button, with the
+  cursor already in it. Handled by the editor, so the browser's own Ctrl+K
+  (focus the address bar) no longer fires while you type.
+- **Every toolbar tooltip shows its shortcut**, in the reader's own keyboard's
+  terms: "Bold (Ctrl+B)" on Windows and Linux, "Bold (⌘B)" on a Mac. Screen
+  readers get the same through `aria-keyshortcuts`.
+- Only shortcuts the editor really binds are shown. Each was read from its
+  extension's own keymap. Highlight's key is left off its button, because the
+  button opens a colour picker and the key applies plain yellow.
+
 ## [1.2.0] — 2026-09-23
 
 **Other extensions can now add to the editor.** Scribe's node list and its

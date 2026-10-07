@@ -36,6 +36,9 @@
         "flarum-extension": {
             "title": "Scribe",
             "category": "feature",
+            "optional-dependencies": [
+                "fof/synopsis"
+            ],
             "icon": {
                 "name": "fas fa-pen-nib",
                 "backgroundColor": "#2b3a55",
@@ -49,5 +52,10 @@
         "issues": "https://github.com/ernestdefoe/scribe/issues",
         "source": "https://github.com/ernestdefoe/scribe",
         "forum": "https://ernestdefoe.online/t/scribe"
+    },
+    "config": {
+        "platform": {
+            "php": "8.3.0"
+        }
     }
 }

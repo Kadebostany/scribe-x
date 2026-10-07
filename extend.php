@@ -6,9 +6,14 @@
  * Deliberately does NOT depend on flarum/markdown. See src/Formatter/Vocabulary.
  */
 
+use Flarum\Api\Resource\DiscussionResource;
 use Flarum\Extend;
 use Flarum\Extension\ExtensionManager;
+use ErnestDefoe\Scribe\Api\SynopsisExcerpt;
+use ErnestDefoe\Scribe\Formatter\BareDiscordLinks;
 use ErnestDefoe\Scribe\Formatter\Configure;
+use ErnestDefoe\Scribe\Formatter\ReplyGate;
+use ErnestDefoe\Scribe\Formatter\VideoEmbed;
 
 return [
     /*
@@ -64,7 +69,23 @@ return [
         ->css(__DIR__.'/less/admin.less'),
 
     (new Extend\Formatter)
-        ->configure(Configure::class),
+        ->configure(Configure::class)
+        ->parse(BareDiscordLinks::class)
+        // "Reply to view" content leaves the server only for viewers entitled to it.
+        ->render(ReplyGate::class),
+
+    /*
+     * fof/synopsis builds its discussion-list excerpt from the stored XML, so
+     * the render callback above never runs on it. This keeps gated content out
+     * of the excerpt too. fof-synopsis is an optional dependency in
+     * composer.json so this field mutator runs AFTER Synopsis adds the field;
+     * booted first, it would mutate nothing.
+     */
+    (new Extend\Conditional())
+        ->whenExtensionEnabled('fof-synopsis', fn () => [
+            (new Extend\ApiResource(DiscussionResource::class))
+                ->field('synopsisExcerpt', SynopsisExcerpt::class),
+        ]),
 
     /*
      * Which buttons the toolbar shows, in order, as chosen in the AdminCP.
@@ -79,6 +100,23 @@ return [
             $decoded = json_decode((string) $value, true);
 
             return is_array($decoded) && $decoded !== [] ? array_values(array_filter($decoded, 'is_string')) : null;
+        })
+        /*
+         * Video embeds. These decide what the EDITOR does with a pasted link and
+         * whether a click loads the player in the page; they never change how a
+         * stored post parses, so flipping them needs no formatter rebuild and
+         * leaves every existing post exactly as it was. With embeds off, or a
+         * provider off, the facade is simply the link it already is.
+         */
+        ->default('ernestdefoe-scribe.video_embeds', true)
+        ->default('ernestdefoe-scribe.video_providers_off', '[]')
+        ->serializeToForum('scribeVideoEmbeds', 'ernestdefoe-scribe.video_embeds', fn ($value) => (bool) $value)
+        ->serializeToForum('scribeVideoOff', 'ernestdefoe-scribe.video_providers_off', function ($value) {
+            $decoded = json_decode((string) $value, true);
+
+            return is_array($decoded)
+                ? array_values(array_intersect(array_keys(VideoEmbed::providers()), array_filter($decoded, 'is_string')))
+                : [];
         }),
 
     new Extend\Locales(__DIR__.'/locale'),

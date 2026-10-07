@@ -28,6 +28,7 @@ ernestdefoe-scribe:
       code_block: Kod bloğu
       link: Bağlantı
       image: Görsel
+      video: Video
       table: Tablo
       toggle_header_cell: Başlık hücresi aç/kapat
       add_row: Satır ekle
@@ -59,6 +60,18 @@ ernestdefoe-scribe:
       spoiler_title_placeholder: Spoiler başlığı…
       info_title_placeholder: Başlık…
 
+    video:
+      placeholder: Video bağlantısını yapıştır (YouTube, Vimeo, TikTok…)
+      unsupported: Bu bağlantı gömülebilecek bir video değil. Bağlantı olarak eklemek için bağlantı butonunu kullan.
+      provider_off: Bu forumda {provider} videolarını gömme kapalı.
+      play: "{provider} videosunu oynat"
+      watch_on: "{provider}'da izle"
+      player_title: "{provider} video oynatıcı"
+      caption_placeholder: Açıklama ekle (isteğe bağlı)
+      caption_label: Video açıklaması
+      replace: Videoyu değiştir
+      remove: Videoyu kaldır
+
   admin:
     toolbar_label: Editör araç çubuğu
     toolbar_help: >
@@ -69,3 +82,18 @@ ernestdefoe-scribe:
     toolbar_empty: Araç çubuğunu oluşturmak için özellikleri buraya sürükle.
     palette_empty: Tüm özellikler zaten araç çubuğunda.
     reset: Varsayılanlara sıfırla
+
+    video:
+      heading: Video gömme
+      help: >
+        Desteklenen bir video bağlantısını ayrı bir satıra yapıştır, video
+        olarak gömülsün. Okuyucular önce bir önizleme görür; oynata basana
+        kadar video sitesinden hiçbir şey yüklenmez. Bir siteyi kapatırsan o
+        siteye ait yeni bağlantılar bağlantı olarak kalır, mevcut gömmeler de
+        gönderide oynamak yerine videonun kendi sayfasını açar.
+      enabled: Videoları göm (tıklayınca yüklenir)
+      providers: Siteler
+      not_supported: >
+        Desteklenmediği için bağlantı olarak kalanlar: fb.watch, vm.tiktok.com
+        ve facebook.com/share bağlantıları (bunlar yönlendirme), Rumble, Kick
+        ve X/Twitter.

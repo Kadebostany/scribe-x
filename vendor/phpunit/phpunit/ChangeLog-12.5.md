@@ -2,6 +2,44 @@
 
 All notable changes of the PHPUnit 12.5 release series are documented in this file using the [Keep a CHANGELOG](https://keepachangelog.com/) principles.
 
+## [12.5.38] - 2026-10-05
+
+### Changed
+
+* The Software Bill of Materials (SBOM) embedded in the PHAR now uses CycloneDX 1.7 and provides the NTIA minimum elements as well as the data fields that BSI TR-03183-2 (version 2.1.0) requires for logical and identified components, including component creators, original, distribution and effective licences, source code URIs, and the PHP runtime and its extensions as external components
+
+### Fixed
+
+* `setUpBeforeClass()` and `tearDownAfterClass()` were run twice for a test class that is the only test class in a test suite of the XML configuration file that has the name of that test class
+* Tests could not be run in process isolation when the path of the bootstrap script, the test file, or the directory for temporary files contained a single quote
+* A test that is run in process isolation aborts the test run when its result cannot be unserialized, for instance because it returns an object that holds a test double
+* Issues that are listed in the baseline are not ignored for tests that are run in a separate process
+* Arguments in the `--ARGS--` section of a PHPT test that start with `-` were interpreted by PHP instead of being passed to the test when the test also has a `--STDIN--` section
+* Recording the tests that passed in a child process copied all tests that had passed so far, which made running many tests in process isolation increasingly slow
+
+## [12.5.37] - 2026-09-29
+
+### Fixed
+
+* The class name argument of `#[RequiresMethod]` is declared as `class-string`, so static analysis reports an error when it refers to a class that does not exist
+* A `#[RequiresMethod]` attribute that refers to a class which cannot be loaded, for instance because its parent class does not exist, aborts the test run instead of skipping the test
+
+## [12.5.36] - 2026-09-25
+
+### Changed
+
+* Control characters and ANSI escape sequences in user-supplied strings such as test names, data set names, and messages are now made visible as `\u{NNNN}` escape sequences instead of being passed through to the terminal
+
+## [12.5.35] - 2026-09-09
+
+### Fixed
+
+* Paths of included files are now escaped when generating the code that is executed in a separate process, so that a path containing special characters no longer produces broken code
+* Tests of a test class that is skipped as a whole are missing from the TestDox output
+* A test that is skipped or marked incomplete before it started is missing from the TestDox output
+* A test that is marked incomplete before it started is not counted in the number of tests that ran
+* No progress is printed for a test that is marked incomplete before it started
+
 ## [12.5.34] - 2026-08-27
 
 ### Fixed
@@ -292,6 +330,10 @@ All notable changes of the PHPUnit 12.5 release series are documented in this fi
 * [#6380](https://github.com/sebastianbergmann/phpunit/pull/6380): Allow `Throwable` in `expectExceptionObject()`
 * A PHPUnit notice is now emitted for test methods that create a mock object but do not configure an expectation for it
 
+[12.5.38]: https://github.com/sebastianbergmann/phpunit/compare/12.5.37...12.5.38
+[12.5.37]: https://github.com/sebastianbergmann/phpunit/compare/12.5.36...12.5.37
+[12.5.36]: https://github.com/sebastianbergmann/phpunit/compare/12.5.35...12.5.36
+[12.5.35]: https://github.com/sebastianbergmann/phpunit/compare/12.5.34...12.5.35
 [12.5.34]: https://github.com/sebastianbergmann/phpunit/compare/12.5.33...12.5.34
 [12.5.33]: https://github.com/sebastianbergmann/phpunit/compare/12.5.32...12.5.33
 [12.5.32]: https://github.com/sebastianbergmann/phpunit/compare/12.5.31...12.5.32

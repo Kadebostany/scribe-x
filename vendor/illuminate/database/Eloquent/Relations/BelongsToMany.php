@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\Concerns\AsPivot;
 use Illuminate\Database\Eloquent\Relations\Concerns\InteractsWithDictionary;
 use Illuminate\Database\Eloquent\Relations\Concerns\InteractsWithPivotTable;
+use Illuminate\Database\Eloquent\Relations\Concerns\SupportsPivotInverseRelations;
 use Illuminate\Database\Query\Grammars\MySqlGrammar;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Arr;
@@ -18,6 +19,8 @@ use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use SortDirection;
+
+use function Illuminate\Support\enum_value;
 
 /**
  * @template TRelatedModel of \Illuminate\Database\Eloquent\Model
@@ -31,7 +34,7 @@ use SortDirection;
  */
 class BelongsToMany extends Relation
 {
-    use InteractsWithDictionary, InteractsWithPivotTable;
+    use InteractsWithDictionary, InteractsWithPivotTable, SupportsPivotInverseRelations;
 
     /**
      * The intermediate table for the relation.
@@ -95,6 +98,13 @@ class BelongsToMany extends Relation
      * @var array
      */
     protected $pivotWhereIns = [];
+
+    /**
+     * Any pivot table restrictions for whereBetween clauses.
+     *
+     * @var array
+     */
+    protected $pivotWhereBetweens = [];
 
     /**
      * Any pivot table restrictions for whereNull clauses.
@@ -287,8 +297,19 @@ class BelongsToMany extends Relation
             $key = $this->getDictionaryKey($model->{$this->parentKey});
 
             if ($key !== null && isset($dictionary[$key])) {
+                $items = $dictionary[$key];
+
+                // Correct $this->parent to the actual parent for each group of results...
+                if ($this->declaringInverseRelationship) {
+                    foreach ($items as $item) {
+                        $item->{$this->accessor}?->setRelation(
+                            $this->declaringInverseRelationship, $model
+                        );
+                    }
+                }
+
                 $model->setRelation(
-                    $relation, $this->related->newCollection($dictionary[$key])
+                    $relation, $this->related->newCollection($items)
                 );
             }
         }
@@ -390,6 +411,13 @@ class BelongsToMany extends Relation
 
             $column($pivotQuery);
 
+            $this->pivotWheres[] = [
+                fn ($query) => $query->addNestedWhereQuery($pivotQuery->getQuery()),
+                null,
+                null,
+                $boolean,
+            ];
+
             $this->query->getQuery()->addNestedWhereQuery($pivotQuery->getQuery(), $boolean);
 
             return $this;
@@ -411,6 +439,8 @@ class BelongsToMany extends Relation
      */
     public function wherePivotBetween($column, array $values, $boolean = 'and', $not = false)
     {
+        $this->pivotWhereBetweens[] = func_get_args();
+
         return $this->whereBetween($this->qualifyPivotColumn($column), $values, $boolean, $not);
     }
 
@@ -809,6 +839,8 @@ class BelongsToMany extends Relation
         $id = $id instanceof Arrayable ? $id->toArray() : $id;
 
         if (is_array($id)) {
+            $id = array_map(enum_value(...), $id);
+
             if (count($result) === count(array_unique($id))) {
                 return $result;
             }
@@ -846,6 +878,8 @@ class BelongsToMany extends Relation
         $id = $id instanceof Arrayable ? $id->toArray() : $id;
 
         if (is_array($id)) {
+            $id = array_map(enum_value(...), $id);
+
             if (count($result) === count(array_unique($id))) {
                 return $result;
             }
@@ -1252,9 +1286,11 @@ class BelongsToMany extends Relation
         // and create a new Pivot model, which is basically a dynamic model that we
         // will set the attributes, table, and connections on it so it will work.
         foreach ($models as $model) {
-            $model->setRelation($this->accessor, $this->newExistingPivot(
-                $this->migratePivotAttributes($model)
-            ));
+            $pivot = $this->newExistingPivot($this->migratePivotAttributes($model));
+
+            $this->applyChaperonesToPivot($pivot, $this->parent, $model);
+
+            $model->setRelation($this->accessor, $pivot);
         }
     }
 
@@ -1463,6 +1499,31 @@ class BelongsToMany extends Relation
         $this->touchIfTouching();
 
         return $instances;
+    }
+
+    /**
+     * Create a new instance of the related model without raising any events and attach it to the parent model.
+     *
+     * @param  array  $attributes
+     * @param  array  $joining
+     * @param  bool  $touch
+     * @return TRelatedModel&object{pivot: TPivotModel}
+     */
+    public function createQuietly(array $attributes = [], array $joining = [], $touch = true)
+    {
+        return Model::withoutEvents(fn () => $this->create($attributes, $joining, $touch));
+    }
+
+    /**
+     * Create an array of new instances of the related models without raising any events and attach them to the parent model.
+     *
+     * @param  iterable  $records
+     * @param  array  $joinings
+     * @return array<int, TRelatedModel&object{pivot: TPivotModel}>
+     */
+    public function createManyQuietly(iterable $records, array $joinings = [])
+    {
+        return Model::withoutEvents(fn () => $this->createMany($records, $joinings));
     }
 
     /** @inheritDoc */

@@ -8,12 +8,13 @@ declare const m: Mithril.Static;
  * Whether the current user has unlocked a [reply]-gated block: they authored
  * the post it's in, or they've posted a comment in that discussion.
  *
- * 🚨 Not server-enforced — see Vocabulary::EXTRA_TEMPLATES['SCRIBEREPLY'].
- * Both the locked message and the real content ship in every response;
- * applyReplyGates() (below) is what actually hides one of them, client-side.
- * That's what makes this reactive: a reply the user just posted is already
- * in `app.store` the moment the request resolves, so the very next redraw
- * sees it — no server round trip, no page reload.
+ * 🚨 Enforced server-side by ReplyGate (src/Formatter/ReplyGate.php): a
+ * viewer who has not replied gets the gate with its content removed and
+ * `data-withheld` set. For everyone else the content ships and this decides
+ * which half is visible, as before. It stays reactive: a reply the user just
+ * posted is already in `app.store` the moment the request resolves, so the
+ * next redraw sees it, and any post whose gate was withheld is fetched once
+ * more, now with its content, without a page reload.
  *
  * 🚨 Cached per discussion+user for the session, not re-queried on every
  * redraw. `undefined` (not yet known) renders as locked — see
@@ -22,12 +23,24 @@ declare const m: Mithril.Static;
  */
 const cache = new Map<string, boolean>();
 const pending = new Set<string>();
+const refetched = new Set<string>();
 
 function hasReplied(discussionId: string): boolean | undefined {
   const user = app.session.user;
   if (!user) return false;
 
   const key = `${discussionId}:${user.id()}`;
+  if (cache.get(key)) return true;
+
+  // A comment they just posted is in the store before any lookup could say so.
+  const posted = app.store
+    .all('posts')
+    .some((p: any) => p.contentType?.() === 'comment' && p.user?.() === user && p.discussion?.()?.id?.() === discussionId);
+  if (posted) {
+    cache.set(key, true);
+    return true;
+  }
+
   if (cache.has(key)) return cache.get(key);
 
   if (!pending.has(key)) {
@@ -72,6 +85,13 @@ export function applyReplyGates(element: HTMLElement, post: any): void {
   // message in their OWN language. Configure::resolveTokens leaves a sensible
   // sentence there for the case where this never runs.
   const label = extractText(app.translator.trans('ernestdefoe-scribe.forum.reply_gate.locked'));
+
+  // The server left this post's gated content out because the viewer had not
+  // replied when it was rendered. Now they have: fetch it again, once.
+  if (unlocked === true && post.id() && !refetched.has(post.id()) && element.querySelector('.Scribe-replyGate[data-withheld]')) {
+    refetched.add(post.id());
+    app.store.find('posts', post.id()).then(() => m.redraw()).catch(() => refetched.delete(post.id()));
+  }
 
   gates.forEach((gate) => {
     const locked = gate.querySelector<HTMLElement>('.Scribe-replyGateLocked');
