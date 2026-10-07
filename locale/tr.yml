@@ -65,7 +65,7 @@ ernestdefoe-scribe:
       unsupported: Bu bağlantı gömülebilecek bir video değil. Bağlantı olarak eklemek için bağlantı butonunu kullan.
       provider_off: Bu forumda {provider} videolarını gömme kapalı.
       play: "{provider} videosunu oynat"
-      watch_on: "{provider}'da izle"
+      watch_on: "İzle: {provider}"
       player_title: "{provider} video oynatıcı"
       caption_placeholder: Açıklama ekle (isteğe bağlı)
       caption_label: Video açıklaması
