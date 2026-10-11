@@ -5,6 +5,7 @@ namespace ErnestDefoe\Scribe\Formatter;
 use Flarum\Locale\TranslatorInterface;
 use s9e\TextFormatter\Configurator;
 use s9e\TextFormatter\Configurator\Items\AttributeFilters\RegexpFilter;
+use s9e\TextFormatter\Plugins\HTMLElements\Configurator as HTMLElementsConfigurator;
 
 /**
  * Teaches the formatter to read the HTML the editor produces, and to keep
@@ -26,6 +27,9 @@ class Configure
         $this->registerTags($config, $this->resolveTokens(Vocabulary::EXTRA_TEMPLATES), Vocabulary::ATTRIBUTES);
 
         $plugin = $config->plugins->load('HTMLElements');
+        if (! $plugin instanceof HTMLElementsConfigurator) {
+            throw new \LogicException('s9e loaded something other than its HTMLElements plugin.');
+        }
 
         foreach (Vocabulary::ELEMENTS + Vocabulary::EXTRA_ELEMENTS as $element => $tag) {
             // A tag we skipped because nothing registered it (and nobody else
@@ -49,6 +53,23 @@ class Configure
          */
         foreach (Vocabulary::PASSTHROUGH as $element) {
             $plugin->allowElement($element);
+        }
+
+        /*
+         * 🚨 Decode entities in the TEXT, or they are shown as written.
+         *
+         * Scribe stores HTML, and TipTap serialises `&` as `&amp;`, a
+         * non-breaking space as `&nbsp;` and `<` typed as text as `&lt;`; text
+         * pasted from Word or WordPress adds curly quotes on top. HTMLElements
+         * only decodes attribute values, and flarum/markdown, which decoded the
+         * rest, is off wherever this editor runs. So a member read
+         * "US &amp; UK" and "PARTNERS&nbsp;first" (Wil Vincent, 2026-10-10).
+         *
+         * A decoded `&lt;` becomes the CHARACTER `<`, which is escaped again
+         * when rendered: it can never open an element.
+         */
+        if (! isset($config->HTMLEntities)) {
+            $config->plugins->load('HTMLEntities');
         }
 
         /*
