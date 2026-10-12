@@ -9,6 +9,7 @@ import {
   buttonsFor,
   DEFAULT_TOOLBAR,
   ALIGN_ACTIONS,
+  SIZE_ACTIONS,
   TABLE_ACTIONS,
   MIN_TABLE_SIZE,
   MAX_TABLE_SIZE,
@@ -97,6 +98,7 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
     | 'info'
     | 'table'
     | 'alignMenu'
+    | 'sizeMenu'
     | 'tableMenu'
     | null = null;
   value = '';
@@ -417,6 +419,14 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
       return (
         <div className="Scribe-prompt Scribe-prompt--menu">
           {ALIGN_ACTIONS.map((b) => this.menuItem(b, editor))}
+        </div>
+      );
+    }
+
+    if (kind === 'sizeMenu') {
+      return (
+        <div className="Scribe-prompt Scribe-prompt--menu">
+          {SIZE_ACTIONS.map((b) => this.menuItem(b, editor))}
         </div>
       );
     }

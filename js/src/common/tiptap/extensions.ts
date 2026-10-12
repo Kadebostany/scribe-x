@@ -24,8 +24,8 @@ import Placeholder from '@tiptap/extension-placeholder';
 import Superscript from '@tiptap/extension-superscript';
 import Subscript from '@tiptap/extension-subscript';
 import { TextStyle } from '@tiptap/extension-text-style';
-import { Table, TableCell, TableHeader } from '@tiptap/extension-table';
-import { ScribeTableRow } from './tableSize';
+import { TableCell, TableHeader } from '@tiptap/extension-table';
+import { ScribeTable, ScribeTableRow } from './tableSize';
 import { Extension, Mark, Node, mergeAttributes } from '@tiptap/core';
 import { registeredExtensions } from '../registry';
 import { ScribeVideo, ScribeVideoPaste } from './video';
@@ -59,6 +59,30 @@ export const ScribeColor = Mark.create({
   },
   parseHTML() {
     return [{ tag: 'span[data-color]' }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['span', mergeAttributes(HTMLAttributes), 0];
+  },
+});
+
+/**
+ * Text smaller than the body. A fixed set of presets, never a free size: the
+ * attribute is `data-size="sm|xs"`, the server template only emits it for
+ * exactly those values, and the actual font-size lives in CSS (forum.less).
+ */
+export const ScribeSize = Mark.create({
+  name: 'scribeSize',
+  addAttributes() {
+    return {
+      size: {
+        default: null,
+        parseHTML: (el: HTMLElement) => el.getAttribute('data-size'),
+        renderHTML: (attrs: Record<string, any>) => (attrs.size ? { 'data-size': attrs.size } : {}),
+      },
+    };
+  },
+  parseHTML() {
+    return [{ tag: 'span[data-size]' }];
   },
   renderHTML({ HTMLAttributes }) {
     return ['span', mergeAttributes(HTMLAttributes), 0];
@@ -363,12 +387,13 @@ export function buildExtensions(placeholder: string) {
     ScribeColor,
     ScribeAlign,
     ScribeImageAlign,
+    ScribeSize,
     ScribeSpoiler,
     ScribeInfo,
     ScribeReply,
     ScribeVideo,
     ScribeVideoPaste,
-    Table.configure({ resizable: true }),
+    ScribeTable.configure({ resizable: true }),
     ScribeTableRow,
     TableHeader,
     TableCell,

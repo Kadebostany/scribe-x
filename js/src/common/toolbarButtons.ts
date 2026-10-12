@@ -33,7 +33,7 @@ export interface ScribeButton {
   /** Absent when the button opens a form instead of acting immediately. */
   run?: (e: Editor) => void;
   /** Opens a form rather than toggling immediately. */
-  prompt?: 'link' | 'image' | 'video' | 'color' | 'highlight' | 'spoiler' | 'info' | 'table' | 'alignMenu' | 'tableMenu';
+  prompt?: 'link' | 'image' | 'video' | 'color' | 'highlight' | 'spoiler' | 'info' | 'table' | 'alignMenu' | 'sizeMenu' | 'tableMenu';
   /**
    * A short suffix drawn on the icon.
    *
@@ -78,6 +78,8 @@ export const SCRIBE_BUTTONS: ScribeButton[] = [
     active: (e) => e.isActive('scribeColor') },
   { key: 'highlight', icon: 'fas fa-highlighter', label: 'highlight', prompt: 'highlight',
     active: (e) => e.isActive('highlight') },
+  { key: 'fontSize', icon: 'fas fa-text-height', label: 'font_size', prompt: 'sizeMenu',
+    active: (e) => e.isActive('scribeSize') },
   { key: 'heading1', shortcut: 'Mod-Alt-1', icon: 'fas fa-heading', label: 'heading1', badge: '1',
     active: (e) => e.isActive('heading', { level: 1 }),
     run: (e) => e.chain().focus().toggleHeading({ level: 1 }).run() },
@@ -127,6 +129,18 @@ export const DEFAULT_TOOLBAR = [
   'link', 'image', 'video',
 ];
 
+/** Smaller-than-body presets behind the "font size" entry; "normal" clears. */
+export const SIZE_ACTIONS: ScribeButton[] = [
+  { key: 'sizeSmall', icon: 'fas fa-font', label: 'size_small', badge: 'S',
+    active: (e) => e.isActive('scribeSize', { size: 'sm' }),
+    run: (e) => e.chain().focus().setMark('scribeSize', { size: 'sm' }).run() },
+  { key: 'sizeXSmall', icon: 'fas fa-font', label: 'size_xsmall', badge: 'XS',
+    active: (e) => e.isActive('scribeSize', { size: 'xs' }),
+    run: (e) => e.chain().focus().setMark('scribeSize', { size: 'xs' }).run() },
+  { key: 'sizeNormal', icon: 'fas fa-text-slash', label: 'size_normal',
+    run: (e) => e.chain().focus().unsetMark('scribeSize').run() },
+];
+
 /**
  * The four options behind the "align" toolbar entry's dropdown. Not part of
  * SCRIBE_BUTTONS — the admin toolbar builder shouldn't offer these as four
@@ -163,6 +177,22 @@ export const TABLE_ACTIONS: ScribeButton[] = [
     enabled: (e) => e.can().addColumnAfter(), run: (e) => e.chain().focus().addColumnAfter().run() },
   { key: 'deleteColumn', icon: 'fas fa-table-columns', label: 'delete_column', badge: '−',
     enabled: (e) => e.can().deleteColumn(), run: (e) => e.chain().focus().deleteColumn().run() },
+  { key: 'tableAutoWidth', icon: 'fas fa-arrows-left-right-to-line', label: 'table_auto_width',
+    active: (e) => !!e.getAttributes('table').autoWidth,
+    enabled: (e) => e.can().toggleTableAutoWidth(),
+    run: (e) => (e.chain().focus() as any).toggleTableAutoWidth().run() },
+  { key: 'tableAlignLeft', icon: 'fas fa-align-left', label: 'table_align_left',
+    active: (e) => e.getAttributes('table').align === 'left',
+    enabled: (e) => e.can().toggleTableAlign('left'),
+    run: (e) => (e.chain().focus() as any).toggleTableAlign('left').run() },
+  { key: 'tableAlignCenter', icon: 'fas fa-align-center', label: 'table_align_center',
+    active: (e) => e.getAttributes('table').align === 'center',
+    enabled: (e) => e.can().toggleTableAlign('center'),
+    run: (e) => (e.chain().focus() as any).toggleTableAlign('center').run() },
+  { key: 'tableAlignRight', icon: 'fas fa-align-right', label: 'table_align_right',
+    active: (e) => e.getAttributes('table').align === 'right',
+    enabled: (e) => e.can().toggleTableAlign('right'),
+    run: (e) => (e.chain().focus() as any).toggleTableAlign('right').run() },
   { key: 'mergeCells', icon: 'fas fa-object-group', label: 'merge_cells',
     enabled: (e) => e.can().mergeCells(), run: (e) => e.chain().focus().mergeCells().run() },
   { key: 'splitCell', icon: 'fas fa-object-ungroup', label: 'split_cells',

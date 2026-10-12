@@ -14,6 +14,10 @@ ernestdefoe-scribe:
       subscript: Subscript
       text_color: Text colour
       highlight: Highlight
+      font_size: Font size
+      size_small: Small
+      size_xsmall: Extra small
+      size_normal: Normal size
       heading1: Title
       heading: Heading
       subheading: Subheading
@@ -41,6 +45,10 @@ ernestdefoe-scribe:
       delete_column: Delete column
       merge_cells: Merge cells
       split_cells: Split cells
+      table_auto_width: Fit table to content
+      table_align_left: Align table left
+      table_align_center: Center table
+      table_align_right: Align table right
       row_height: Row height (px)
       column_width: Column width (px)
       image_width: Image width (px)

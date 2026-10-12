@@ -243,7 +243,7 @@ export default class ScribeEditorDriver implements EditorDriverInterface {
     if (this.editor.isActive('table')) {
       const size = (this.editor.storage as any).tableRow;
       signature += `|${size?.rowHeight(this.editor.state)}x${size?.columnWidth(this.editor.state)}|`;
-      for (const b of TABLE_ACTIONS) signature += b.enabled?.(this.editor) ? '1' : '0';
+      for (const b of TABLE_ACTIONS) signature += (b.enabled?.(this.editor) ? '1' : '0') + (b.active?.(this.editor) ? 'a' : '');
     }
     // Selected image: its size fields must follow a drag-resize.
     if (this.editor.isActive('image')) {

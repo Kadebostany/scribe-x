@@ -1,4 +1,4 @@
-import { TableRow } from '@tiptap/extension-table';
+import { Table, TableRow } from '@tiptap/extension-table';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import type { EditorState, Transaction } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
@@ -26,6 +26,83 @@ const HANDLE = 5;
 const key = new PluginKey<number>('scribeRowResize');
 
 const clampSize = (n: number) => Math.max(MIN_TABLE_SIZE, Math.min(MAX_TABLE_SIZE, Math.round(n)));
+
+/**
+ * "Fit to content": the table takes the width of its columns instead of
+ * stretching to the full post width. Off (the default) = old behaviour.
+ *
+ * Stored as `data-auto-width` on <table>; the server maps it to `autowidth`
+ * (Vocabulary::SOURCE_ATTRIBUTES). In the editor the class goes on the
+ * TableView wrapper via a node decoration, because TableView never re-syncs
+ * attributes of its own <table> on update.
+ */
+export const ScribeTable = Table.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      align: {
+        default: null,
+        parseHTML: (el: HTMLElement) => {
+          const a = el.getAttribute('data-align');
+          return a === 'left' || a === 'center' || a === 'right' ? a : null;
+        },
+        renderHTML: (attrs: Record<string, any>) => (attrs.align ? { 'data-align': attrs.align } : {}),
+      },
+      autoWidth: {
+        default: false,
+        parseHTML: (el: HTMLElement) => el.hasAttribute('data-auto-width'),
+        renderHTML: (attrs: Record<string, any>) => (attrs.autoWidth ? { 'data-auto-width': '1' } : {}),
+      },
+    };
+  },
+
+  addCommands() {
+    return {
+      ...this.parent?.(),
+      /** Same value again clears it. Only visible on a fit-to-content table. */
+      toggleTableAlign:
+        (align: 'left' | 'center' | 'right') =>
+        ({ state, dispatch }) => {
+          if (!isInTable(state)) return false;
+          const { table, tableStart } = selectedRect(state);
+          const next = table.attrs.align === align ? null : align;
+          dispatch?.(state.tr.setNodeMarkup(tableStart - 1, undefined, { ...table.attrs, align: next }));
+          return true;
+        },
+      toggleTableAutoWidth:
+        () =>
+        ({ state, dispatch }) => {
+          if (!isInTable(state)) return false;
+          const { table, tableStart } = selectedRect(state);
+          const pos = tableStart - 1;
+          dispatch?.(state.tr.setNodeMarkup(pos, undefined, { ...table.attrs, autoWidth: !table.attrs.autoWidth }));
+          return true;
+        },
+    };
+  },
+
+  addProseMirrorPlugins() {
+    return [
+      ...(this.parent?.() ?? []),
+      new Plugin({
+        props: {
+          decorations(state: EditorState) {
+            const out: Decoration[] = [];
+            state.doc.descendants((node, pos) => {
+              if (node.type.name === 'table' && node.attrs.autoWidth) {
+                out.push(Decoration.node(pos, pos + node.nodeSize, {
+                  class: 'Scribe-tableAuto' + (node.attrs.align ? ` Scribe-tableAlign-${node.attrs.align}` : ''),
+                }));
+              }
+              return node.type.name !== 'table';
+            });
+            return DecorationSet.create(state.doc, out);
+          },
+        },
+      }),
+    ];
+  },
+});
 
 export const ScribeTableRow = TableRow.extend({
   addAttributes() {
@@ -72,6 +149,8 @@ declare module '@tiptap/core' {
     scribeTableSize: {
       /** `null` clears it back to the natural, content-driven size. */
       setRowHeight: (height: number | null) => ReturnType;
+      toggleTableAutoWidth: () => ReturnType;
+      toggleTableAlign: (align: 'left' | 'center' | 'right') => ReturnType;
       setColumnWidth: (width: number | null) => ReturnType;
     };
   }

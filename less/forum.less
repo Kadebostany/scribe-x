@@ -317,6 +317,11 @@
       border-top: 1px solid var(--scribe-line, rgba(0, 0, 0, 0.15));
     }
 
+    /* "Fit to content": columns keep their own widths instead of stretching. */
+    .Scribe-tableAuto table { width: auto; table-layout: auto; }
+    .Scribe-tableAlign-center table { margin-left: auto; margin-right: auto; }
+    .Scribe-tableAlign-right table { margin-left: auto; }
+
     /* A wide table scrolls inside the editor; the composer must not grow a
        horizontal scrollbar of its own. */
     table {
@@ -431,6 +436,10 @@
     border-collapse: separate;
     border-spacing: 3px;
     width: 100%;
+
+    &[data-auto-width] { width: auto; }
+    &[data-auto-width][data-align="center"] { margin-left: auto; margin-right: auto; }
+    &[data-auto-width][data-align="right"]  { margin-left: auto; }
   }
 
   th, td {
@@ -800,3 +809,8 @@
   .Scribe-videoThumb,
   .Scribe-videoPlay { transition: none; }
 }
+
+/* Smaller-than-body text (ScribeSize mark / server SPAN data-size). Relative
+   units so it follows whatever the surrounding text size is. */
+span[data-size="sm"] { font-size: 0.85em; }
+span[data-size="xs"] { font-size: 0.7em; }

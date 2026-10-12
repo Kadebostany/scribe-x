@@ -10,6 +10,10 @@ ernestdefoe-scribe:
       subscript: Alt simge
       text_color: Metin rengi
       highlight: Vurgula
+      font_size: Yazı boyutu
+      size_small: Küçük
+      size_xsmall: Çok küçük
+      size_normal: Normal boyut
       heading1: Başlık
       heading: Ana başlık
       subheading: Alt başlık
@@ -37,6 +41,10 @@ ernestdefoe-scribe:
       delete_column: Sütunu sil
       merge_cells: Hücreleri birleştir
       split_cells: Hücreleri böl
+      table_auto_width: Tabloyu içeriğe sığdır
+      table_align_left: Tabloyu sola yasla
+      table_align_center: Tabloyu ortala
+      table_align_right: Tabloyu sağa yasla
       row_height: Satır yüksekliği (px)
       column_width: Sütun genişliği (px)
       image_width: Görsel genişliği (px)
