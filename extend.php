@@ -9,6 +9,7 @@
 use ErnestDefoe\Scribe\Api\SynopsisExcerpt;
 use ErnestDefoe\Scribe\Formatter\BareDiscordLinks;
 use ErnestDefoe\Scribe\Formatter\BlockUploadsOutOfParagraphs;
+use ErnestDefoe\Scribe\Formatter\CodeBlocksWithoutInnerCode;
 use ErnestDefoe\Scribe\Formatter\Configure;
 use ErnestDefoe\Scribe\Formatter\ReplyGate;
 use ErnestDefoe\Scribe\Formatter\VideoEmbed;
@@ -73,6 +74,7 @@ return [
         ->configure(Configure::class)
         ->parse(BareDiscordLinks::class)
         ->parse(BlockUploadsOutOfParagraphs::class)
+        ->parse(CodeBlocksWithoutInnerCode::class)
         // "Reply to view" content leaves the server only for viewers entitled to it.
         ->render(ReplyGate::class),
 
