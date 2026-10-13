@@ -315,8 +315,9 @@ function setColumnWidth(state: EditorState, width: number | null, dispatch: Disp
       let colwidth = edits.get(cellPos);
       if (!colwidth) {
         const cell = table.nodeAt(cellPos)!;
-        colwidth = cell.attrs.colwidth ? cell.attrs.colwidth.slice() : new Array(cell.attrs.colspan).fill(0);
-        edits.set(cellPos, colwidth);
+        const fresh: number[] = cell.attrs.colwidth ? cell.attrs.colwidth.slice() : new Array(cell.attrs.colspan).fill(0);
+        edits.set(cellPos, fresh);
+        colwidth = fresh;
       }
       colwidth[col - map.colCount(cellPos)] = width ? clampSize(width) : 0;
     }
