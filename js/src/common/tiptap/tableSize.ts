@@ -267,11 +267,22 @@ function currentRowHeight(state: EditorState): number | null {
   return pos > -1 ? state.doc.nodeAt(pos)?.attrs.height ?? null : null;
 }
 
+/** Every row the selection touches (a cell range sets them all), not just the first. */
 function setRowHeight(state: EditorState, height: number | null, dispatch: Dispatch): boolean {
-  const pos = currentRowPos(state);
-  const node = pos > -1 ? state.doc.nodeAt(pos) : null;
-  if (!node) return false;
-  dispatch?.(state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, height: height && clampSize(height) }));
+  if (!isInTable(state)) return false;
+  if (!dispatch) return true;
+  const { table, tableStart, top, bottom } = selectedRect(state);
+  const tr = state.tr;
+  let pos = tableStart;
+
+  table.forEach((row, _offset, i) => {
+    if (i >= top && i < bottom) {
+      tr.setNodeMarkup(pos, undefined, { ...row.attrs, height: height && clampSize(height) });
+    }
+    pos += row.nodeSize;
+  });
+
+  dispatch(tr);
   return true;
 }
 
@@ -287,28 +298,36 @@ function currentColumnWidth(state: EditorState): number | null {
   return cell?.attrs.colwidth?.[left - map.colCount(cellPos)] || null;
 }
 
-/** Writes `colwidth` on every cell in the column, the way columnResizing does. */
+/**
+ * Writes `colwidth` for every column the selection touches, the way
+ * columnResizing does. A cell spanning several selected columns is edited
+ * once per column but written once.
+ */
 function setColumnWidth(state: EditorState, width: number | null, dispatch: Dispatch): boolean {
   if (!isInTable(state)) return false;
   if (!dispatch) return true;
-  const { map, table, tableStart, left } = selectedRect(state);
+  const { map, table, tableStart, left, right } = selectedRect(state);
+  const edits = new Map<number, number[]>();
+
+  for (let col = left; col < right; col++) {
+    for (let row = 0; row < map.height; row++) {
+      const cellPos = map.map[row * map.width + col];
+      let colwidth = edits.get(cellPos);
+      if (!colwidth) {
+        const cell = table.nodeAt(cellPos)!;
+        colwidth = cell.attrs.colwidth ? cell.attrs.colwidth.slice() : new Array(cell.attrs.colspan).fill(0);
+        edits.set(cellPos, colwidth);
+      }
+      colwidth[col - map.colCount(cellPos)] = width ? clampSize(width) : 0;
+    }
+  }
+
   const tr = state.tr;
-  const seen = new Set<number>();
-
-  for (let row = 0; row < map.height; row++) {
-    const cellPos = map.map[row * map.width + left];
-    if (seen.has(cellPos)) continue; // a rowspan cell appears once per row it covers
-    seen.add(cellPos);
-
+  edits.forEach((colwidth, cellPos) => {
     const cell = table.nodeAt(cellPos)!;
-    const index = left - map.colCount(cellPos);
-    const colwidth: number[] = cell.attrs.colwidth
-      ? cell.attrs.colwidth.slice()
-      : new Array(cell.attrs.colspan).fill(0);
-    colwidth[index] = width ? clampSize(width) : 0;
     const cleared = colwidth.every((w) => !w);
     tr.setNodeMarkup(tableStart + cellPos, undefined, { ...cell.attrs, colwidth: cleared ? null : colwidth });
-  }
+  });
 
   dispatch(tr);
   return true;
