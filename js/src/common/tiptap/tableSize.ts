@@ -1,4 +1,4 @@
-import { TableRow } from '@tiptap/extension-table';
+import { Table, TableRow } from '@tiptap/extension-table';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import type { EditorState, Transaction } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
@@ -26,6 +26,83 @@ const HANDLE = 5;
 const key = new PluginKey<number>('scribeRowResize');
 
 const clampSize = (n: number) => Math.max(MIN_TABLE_SIZE, Math.min(MAX_TABLE_SIZE, Math.round(n)));
+
+/**
+ * "Fit to content": the table takes the width of its columns instead of
+ * stretching to the full post width. Off (the default) = old behaviour.
+ *
+ * Stored as `data-auto-width` on <table>; the server maps it to `autowidth`
+ * (Vocabulary::SOURCE_ATTRIBUTES). In the editor the class goes on the
+ * TableView wrapper via a node decoration, because TableView never re-syncs
+ * attributes of its own <table> on update.
+ */
+export const ScribeTable = Table.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      align: {
+        default: null,
+        parseHTML: (el: HTMLElement) => {
+          const a = el.getAttribute('data-align');
+          return a === 'left' || a === 'center' || a === 'right' ? a : null;
+        },
+        renderHTML: (attrs: Record<string, any>) => (attrs.align ? { 'data-align': attrs.align } : {}),
+      },
+      autoWidth: {
+        default: false,
+        parseHTML: (el: HTMLElement) => el.hasAttribute('data-auto-width'),
+        renderHTML: (attrs: Record<string, any>) => (attrs.autoWidth ? { 'data-auto-width': '1' } : {}),
+      },
+    };
+  },
+
+  addCommands() {
+    return {
+      ...this.parent?.(),
+      /** Same value again clears it. Only visible on a fit-to-content table. */
+      toggleTableAlign:
+        (align: 'left' | 'center' | 'right') =>
+        ({ state, dispatch }) => {
+          if (!isInTable(state)) return false;
+          const { table, tableStart } = selectedRect(state);
+          const next = table.attrs.align === align ? null : align;
+          dispatch?.(state.tr.setNodeMarkup(tableStart - 1, undefined, { ...table.attrs, align: next }));
+          return true;
+        },
+      toggleTableAutoWidth:
+        () =>
+        ({ state, dispatch }) => {
+          if (!isInTable(state)) return false;
+          const { table, tableStart } = selectedRect(state);
+          const pos = tableStart - 1;
+          dispatch?.(state.tr.setNodeMarkup(pos, undefined, { ...table.attrs, autoWidth: !table.attrs.autoWidth }));
+          return true;
+        },
+    };
+  },
+
+  addProseMirrorPlugins() {
+    return [
+      ...(this.parent?.() ?? []),
+      new Plugin({
+        props: {
+          decorations(state: EditorState) {
+            const out: Decoration[] = [];
+            state.doc.descendants((node, pos) => {
+              if (node.type.name === 'table' && node.attrs.autoWidth) {
+                out.push(Decoration.node(pos, pos + node.nodeSize, {
+                  class: 'Scribe-tableAuto' + (node.attrs.align ? ` Scribe-tableAlign-${node.attrs.align}` : ''),
+                }));
+              }
+              return node.type.name !== 'table';
+            });
+            return DecorationSet.create(state.doc, out);
+          },
+        },
+      }),
+    ];
+  },
+});
 
 export const ScribeTableRow = TableRow.extend({
   addAttributes() {
@@ -72,6 +149,8 @@ declare module '@tiptap/core' {
     scribeTableSize: {
       /** `null` clears it back to the natural, content-driven size. */
       setRowHeight: (height: number | null) => ReturnType;
+      toggleTableAutoWidth: () => ReturnType;
+      toggleTableAlign: (align: 'left' | 'center' | 'right') => ReturnType;
       setColumnWidth: (width: number | null) => ReturnType;
     };
   }
@@ -188,11 +267,22 @@ function currentRowHeight(state: EditorState): number | null {
   return pos > -1 ? state.doc.nodeAt(pos)?.attrs.height ?? null : null;
 }
 
+/** Every row the selection touches (a cell range sets them all), not just the first. */
 function setRowHeight(state: EditorState, height: number | null, dispatch: Dispatch): boolean {
-  const pos = currentRowPos(state);
-  const node = pos > -1 ? state.doc.nodeAt(pos) : null;
-  if (!node) return false;
-  dispatch?.(state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, height: height && clampSize(height) }));
+  if (!isInTable(state)) return false;
+  if (!dispatch) return true;
+  const { table, tableStart, top, bottom } = selectedRect(state);
+  const tr = state.tr;
+  let pos = tableStart;
+
+  table.forEach((row, _offset, i) => {
+    if (i >= top && i < bottom) {
+      tr.setNodeMarkup(pos, undefined, { ...row.attrs, height: height && clampSize(height) });
+    }
+    pos += row.nodeSize;
+  });
+
+  dispatch(tr);
   return true;
 }
 
@@ -208,28 +298,37 @@ function currentColumnWidth(state: EditorState): number | null {
   return cell?.attrs.colwidth?.[left - map.colCount(cellPos)] || null;
 }
 
-/** Writes `colwidth` on every cell in the column, the way columnResizing does. */
+/**
+ * Writes `colwidth` for every column the selection touches, the way
+ * columnResizing does. A cell spanning several selected columns is edited
+ * once per column but written once.
+ */
 function setColumnWidth(state: EditorState, width: number | null, dispatch: Dispatch): boolean {
   if (!isInTable(state)) return false;
   if (!dispatch) return true;
-  const { map, table, tableStart, left } = selectedRect(state);
+  const { map, table, tableStart, left, right } = selectedRect(state);
+  const edits = new Map<number, number[]>();
+
+  for (let col = left; col < right; col++) {
+    for (let row = 0; row < map.height; row++) {
+      const cellPos = map.map[row * map.width + col];
+      let colwidth = edits.get(cellPos);
+      if (!colwidth) {
+        const cell = table.nodeAt(cellPos)!;
+        const fresh: number[] = cell.attrs.colwidth ? cell.attrs.colwidth.slice() : new Array(cell.attrs.colspan).fill(0);
+        edits.set(cellPos, fresh);
+        colwidth = fresh;
+      }
+      colwidth[col - map.colCount(cellPos)] = width ? clampSize(width) : 0;
+    }
+  }
+
   const tr = state.tr;
-  const seen = new Set<number>();
-
-  for (let row = 0; row < map.height; row++) {
-    const cellPos = map.map[row * map.width + left];
-    if (seen.has(cellPos)) continue; // a rowspan cell appears once per row it covers
-    seen.add(cellPos);
-
+  edits.forEach((colwidth, cellPos) => {
     const cell = table.nodeAt(cellPos)!;
-    const index = left - map.colCount(cellPos);
-    const colwidth: number[] = cell.attrs.colwidth
-      ? cell.attrs.colwidth.slice()
-      : new Array(cell.attrs.colspan).fill(0);
-    colwidth[index] = width ? clampSize(width) : 0;
     const cleared = colwidth.every((w) => !w);
     tr.setNodeMarkup(tableStart + cellPos, undefined, { ...cell.attrs, colwidth: cleared ? null : colwidth });
-  }
+  });
 
   dispatch(tr);
   return true;
