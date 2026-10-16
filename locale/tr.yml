@@ -62,6 +62,8 @@ ernestdefoe-scribe:
       apply: Uygula
       remove_link: Bağlantıyı kaldır
       clear_colour: Temizle
+      pick_colour: renk seç
+      emoji_label: emoji
       clear_highlight: Temizle
       link_placeholder: Bağlantıyı yapıştır ya da yaz…
       image_placeholder: Görsel adresi…

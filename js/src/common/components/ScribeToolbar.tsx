@@ -340,7 +340,7 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
           <input
             type="color"
             className="Scribe-colorPicker"
-            aria-label="pick colour"
+            aria-label={app.translator.trans('ernestdefoe-scribe.forum.composer.pick_colour') as string}
             value={toPickerHex(this.value)}
             oninput={(e: any) => {
               this.value = e.target.value;
@@ -534,7 +534,7 @@ export default class ScribeToolbar extends Component<ScribeToolbarAttrs> {
           <input
             className="FormControl Scribe-promptInput Scribe-promptEmoji"
             type="text"
-            aria-label="emoji"
+            aria-label={app.translator.trans('ernestdefoe-scribe.forum.composer.emoji_label') as string}
             placeholder="🙂"
             value={this.infoEmoji}
             oninput={(e: any) => (this.infoEmoji = e.target.value)}
