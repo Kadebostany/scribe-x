@@ -119,7 +119,7 @@ export default class ToolbarBuilder extends Component<ToolbarBuilderAttrs> {
 
   chip(b: ScribeButton, index: number, where: 'toolbar' | 'palette') {
     if (!b) return null;
-    const label = app.translator.trans(`ernestdefoe-scribe.lib.buttons.${b.label}`);
+    const label = app.translator.trans(b.translationKey ?? `ernestdefoe-scribe.lib.buttons.${b.label}`);
     const isDropBefore = where === 'toolbar' && this.dropIndex === index && this.dragKey;
 
     return (
