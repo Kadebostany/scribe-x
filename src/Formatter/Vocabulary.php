@@ -167,7 +167,7 @@ abstract class Vocabulary
          * concatenated by hand is a stored-XSS hole: "red;background:url(...)"
          * is a perfectly ordinary-looking colour until it isn't.
          */
-        'SPAN' => '<span><xsl:if test="@color"><xsl:attribute name="data-color"><xsl:value-of select="@color"/></xsl:attribute><xsl:attribute name="style"><xsl:text>color:</xsl:text><xsl:value-of select="@color"/></xsl:attribute></xsl:if><xsl:if test="@size=&apos;sm&apos; or @size=&apos;xs&apos;"><xsl:attribute name="data-size"><xsl:value-of select="@size"/></xsl:attribute></xsl:if><xsl:apply-templates/></span>',
+        'SPAN' => '<span><xsl:if test="@color"><xsl:attribute name="data-color"><xsl:value-of select="@color"/></xsl:attribute><xsl:attribute name="style"><xsl:text>color:</xsl:text><xsl:value-of select="@color"/></xsl:attribute></xsl:if><xsl:if test="@size=&apos;sm&apos; or @size=&apos;xs&apos; or @size=&apos;lg&apos; or @size=&apos;xl&apos;"><xsl:attribute name="data-size"><xsl:value-of select="@size"/></xsl:attribute></xsl:if><xsl:apply-templates/></span>',
         /*
          * 🚨 The editor emits a bare `<details data-title>` with no <summary> —
          * the title bar and the body wrapper below are render-time-only, added

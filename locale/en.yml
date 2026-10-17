@@ -15,6 +15,8 @@ ernestdefoe-scribe:
       text_color: Text colour
       highlight: Highlight
       font_size: Font size
+      size_large: Large
+      size_xlarge: Extra large
       size_small: Small
       size_xsmall: Extra small
       size_normal: Normal size

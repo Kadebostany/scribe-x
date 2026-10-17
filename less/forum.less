@@ -810,7 +810,9 @@
   .Scribe-videoPlay { transition: none; }
 }
 
-/* Smaller-than-body text (ScribeSize mark / server SPAN data-size). Relative
+/* Sized text (ScribeSize mark / server SPAN data-size). Relative
    units so it follows whatever the surrounding text size is. */
+span[data-size="xl"] { font-size: 1.6em; }
+span[data-size="lg"] { font-size: 1.25em; }
 span[data-size="sm"] { font-size: 0.85em; }
 span[data-size="xs"] { font-size: 0.7em; }

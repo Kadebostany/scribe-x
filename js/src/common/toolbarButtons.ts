@@ -233,24 +233,18 @@ export const DEFAULT_TOOLBAR = [
   'video',
 ];
 
-/** Smaller-than-body presets behind the "font size" entry; "normal" clears. */
+/** Size presets behind the "font size" entry; "normal" clears. */
+const sizeAction = (key: string, size: string, label: string, badge: string): ScribeButton => ({
+  key, icon: 'fas fa-font', label, badge,
+  active: (e) => e.isActive('scribeSize', { size }),
+  run: (e) => e.chain().focus().setMark('scribeSize', { size }).run(),
+});
+
 export const SIZE_ACTIONS: ScribeButton[] = [
-  {
-    key: 'sizeSmall',
-    icon: 'fas fa-font',
-    label: 'size_small',
-    badge: 'S',
-    active: (e) => e.isActive('scribeSize', { size: 'sm' }),
-    run: (e) => e.chain().focus().setMark('scribeSize', { size: 'sm' }).run(),
-  },
-  {
-    key: 'sizeXSmall',
-    icon: 'fas fa-font',
-    label: 'size_xsmall',
-    badge: 'XS',
-    active: (e) => e.isActive('scribeSize', { size: 'xs' }),
-    run: (e) => e.chain().focus().setMark('scribeSize', { size: 'xs' }).run(),
-  },
+  sizeAction('sizeXLarge', 'xl', 'size_xlarge', 'XL'),
+  sizeAction('sizeLarge', 'lg', 'size_large', 'L'),
+  sizeAction('sizeSmall', 'sm', 'size_small', 'S'),
+  sizeAction('sizeXSmall', 'xs', 'size_xsmall', 'XS'),
   { key: 'sizeNormal', icon: 'fas fa-text-slash', label: 'size_normal', run: (e) => e.chain().focus().unsetMark('scribeSize').run() },
 ];
 

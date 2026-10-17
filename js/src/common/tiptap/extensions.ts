@@ -65,8 +65,8 @@ export const ScribeColor = Mark.create({
 });
 
 /**
- * Text smaller than the body. A fixed set of presets, never a free size: the
- * attribute is `data-size="sm|xs"`, the server template only emits it for
+ * Text sized relative to the body. A fixed set of presets, never a free size: the
+ * attribute is `data-size="xl|lg|sm|xs"`, the server template only emits it for
  * exactly those values, and the actual font-size lives in CSS (forum.less).
  */
 export const ScribeSize = Mark.create({

@@ -11,6 +11,8 @@ ernestdefoe-scribe:
       text_color: Metin rengi
       highlight: Vurgula
       font_size: Yazı boyutu
+      size_large: Büyük
+      size_xlarge: Çok büyük
       size_small: Küçük
       size_xsmall: Çok küçük
       size_normal: Normal boyut
