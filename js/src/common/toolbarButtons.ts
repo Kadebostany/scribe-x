@@ -235,7 +235,10 @@ export const DEFAULT_TOOLBAR = [
 
 /** Size presets behind the "font size" entry; "normal" clears. */
 const sizeAction = (key: string, size: string, label: string, badge: string): ScribeButton => ({
-  key, icon: 'fas fa-font', label, badge,
+  key,
+  icon: 'fas fa-font',
+  label,
+  badge,
   active: (e) => e.isActive('scribeSize', { size }),
   run: (e) => e.chain().focus().setMark('scribeSize', { size }).run(),
 });

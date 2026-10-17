@@ -90,9 +90,11 @@ export const ScribeTable = Table.extend({
             const out: Decoration[] = [];
             state.doc.descendants((node, pos) => {
               if (node.type.name === 'table' && node.attrs.autoWidth) {
-                out.push(Decoration.node(pos, pos + node.nodeSize, {
-                  class: 'Scribe-tableAuto' + (node.attrs.align ? ` Scribe-tableAlign-${node.attrs.align}` : ''),
-                }));
+                out.push(
+                  Decoration.node(pos, pos + node.nodeSize, {
+                    class: 'Scribe-tableAuto' + (node.attrs.align ? ` Scribe-tableAlign-${node.attrs.align}` : ''),
+                  })
+                );
               }
               return node.type.name !== 'table';
             });
@@ -110,8 +112,7 @@ export const ScribeTableRow = TableRow.extend({
       height: {
         default: null,
         parseHTML: (el: HTMLElement) => parseInt(el.getAttribute('data-row-height') ?? '', 10) || null,
-        renderHTML: (attrs: Record<string, any>) =>
-          attrs.height ? { 'data-row-height': attrs.height, style: `height: ${attrs.height}px` } : {},
+        renderHTML: (attrs: Record<string, any>) => (attrs.height ? { 'data-row-height': attrs.height, style: `height: ${attrs.height}px` } : {}),
       },
     };
   },
@@ -191,16 +192,13 @@ function rowResizing() {
       },
     },
     props: {
-      attributes: (state: EditorState): Record<string, string> =>
-        key.getState(state)! > -1 ? { class: 'row-resize-cursor' } : {},
+      attributes: (state: EditorState): Record<string, string> => (key.getState(state)! > -1 ? { class: 'row-resize-cursor' } : {}),
 
       decorations(state: EditorState) {
         const pos = key.getState(state)!;
         const node = pos > -1 ? state.doc.nodeAt(pos) : null;
         if (!node || node.type.name !== 'tableRow') return null;
-        return DecorationSet.create(state.doc, [
-          Decoration.node(pos, pos + node.nodeSize, { class: 'Scribe-rowResizeHover' }),
-        ]);
+        return DecorationSet.create(state.doc, [Decoration.node(pos, pos + node.nodeSize, { class: 'Scribe-rowResizeHover' })]);
       },
 
       handleDOMEvents: {
@@ -264,7 +262,7 @@ function currentRowPos(state: EditorState): number {
 
 function currentRowHeight(state: EditorState): number | null {
   const pos = currentRowPos(state);
-  return pos > -1 ? state.doc.nodeAt(pos)?.attrs.height ?? null : null;
+  return pos > -1 ? (state.doc.nodeAt(pos)?.attrs.height ?? null) : null;
 }
 
 /** Every row the selection touches (a cell range sets them all), not just the first. */
