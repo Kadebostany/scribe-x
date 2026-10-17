@@ -87,6 +87,17 @@ export default class ScribeEditorDriver implements EditorDriverInterface {
       },
     });
 
+    /*
+     * 🚨 Make the element take focus, like the textarea it replaces.
+     *
+     * Core's Composer.focus() runs `$('.TextEditor-editor').focus()` when the
+     * composer opens. That class sits on this wrapper div, not on the editable
+     * ProseMirror element inside it, and a plain div ignores focus() — so
+     * clicking Reply left the caret nowhere and the person had to click into
+     * the editor before typing. Forward it to the editor instead.
+     */
+    this.el.focus = () => this.focus();
+
     this.renderToolbar();
     this.ready = this.boot();
   }

@@ -33,6 +33,20 @@ app.initializers.add('ernestdefoe/scribe', () => {
   });
 
   /*
+   * 🚨 Core focuses the composer with `.Composer-content :input:enabled:visible,
+   * .TextEditor-editor` and takes the first match. `:input` includes <button>,
+   * and the toolbar sits above the editor, so clicking Reply focused the Bold
+   * button and the person had to click into the editor before typing. Same
+   * selector, minus the toolbar; a body's own focusOnSelector (the discussion
+   * title) still wins. Composer is a lazy chunk in Flarum 2, so it is named by
+   * path — importing it would patch a copy core never uses.
+   */
+  override('flarum/forum/components/Composer', 'focus', function (this: any, original: any) {
+    if (this.attrs.state.body.componentClass.focusOnSelector) return original();
+    this.$('.Composer-content :input:enabled:visible, .TextEditor-editor').not('.Scribe-toolbarMount *').first().focus();
+  });
+
+  /*
    * `refreshContent` is core's own seam for "the rendered HTML just landed
    * in the DOM" — it already re-runs on both oncreate and onupdate (see
    * CommentPost.js), which is exactly when a [reply] gate's lock state needs
